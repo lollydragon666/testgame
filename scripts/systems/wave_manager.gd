@@ -10,6 +10,7 @@ signal wave_changed(wave: int)
 var wave := 1
 var wave_time := 0.0
 var spawn_time := 0.0
+var spawn_index := 0
 var running := false
 var boss_started := false
 
@@ -17,6 +18,7 @@ func start_run() -> void:
 	wave = 1
 	wave_time = 0.0
 	spawn_time = 0.35
+	spawn_index = 0
 	running = true
 	boss_started = false
 	wave_changed.emit(wave)
@@ -42,10 +44,15 @@ func _process(delta: float) -> void:
 			wave_changed.emit(wave)
 
 func _choose_enemy() -> String:
-	var roll := randf()
-	if wave >= 4 and roll < 0.18:
-		return "lancer"
-	if wave >= 3 and roll < 0.40:
-		return "shooter"
-	return "melee"
-
+	var roster: Array[String]
+	if wave == 1:
+		roster = ["melee", "melee", "shooter"]
+	elif wave == 2:
+		roster = ["melee", "shooter", "melee", "lancer"]
+	elif wave <= 4:
+		roster = ["melee", "shooter", "lancer", "melee", "shooter"]
+	else:
+		roster = ["lancer", "shooter", "melee", "lancer", "shooter", "melee"]
+	var enemy_kind := roster[spawn_index % roster.size()]
+	spawn_index += 1
+	return enemy_kind
