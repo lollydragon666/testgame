@@ -14,6 +14,8 @@ const SWEEP_END := 1.04
 var sword_tier := 1
 var cooldown := 0.0
 var swing_time := 0.0
+var swing_direction := 1.0
+var next_swing_direction := 1.0
 var host
 
 func setup(player_host) -> void:
@@ -30,6 +32,8 @@ func try_attack() -> void:
 		return
 	cooldown = cooldown_duration
 	swing_time = swing_duration
+	swing_direction = next_swing_direction
+	next_swing_direction *= -1.0
 	attack_started.emit()
 	_hit_group("enemy", "take_damage")
 	_hit_group("enemy_projectile", "destroy_by_sword")
@@ -70,7 +74,14 @@ func swing_offset() -> float:
 	if swing_time <= 0.0:
 		return 0.0
 	var progress := 1.0 - swing_time / swing_duration
-	return lerpf(SWEEP_START, SWEEP_END, ease(progress, -2.5))
+	var eased_progress := ease(progress, -2.5)
+	return lerpf(swing_start_offset(), swing_end_offset(), eased_progress)
+
+func swing_start_offset() -> float:
+	return SWEEP_START if swing_direction > 0.0 else SWEEP_END
+
+func swing_end_offset() -> float:
+	return SWEEP_END if swing_direction > 0.0 else SWEEP_START
 
 func upgrade_sword() -> void:
 	sword_length += 11.0
@@ -86,3 +97,5 @@ func reset() -> void:
 	sword_tier = 1
 	cooldown = 0.0
 	swing_time = 0.0
+	swing_direction = 1.0
+	next_swing_direction = 1.0

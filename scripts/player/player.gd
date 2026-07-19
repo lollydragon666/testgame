@@ -119,11 +119,19 @@ func _draw() -> void:
 	var base_angle := IsoMath.screen_angle(aim_direction)
 	var eye := Vector2.from_angle(base_angle) * radius * 0.5
 	draw_circle(eye, 3.2, Color("d4c4a4"))
-	_draw_sword(base_angle + attack.swing_offset())
 	if attack.swing_time > 0.0:
-		var progress := 1.0 - attack.swing_time / attack.swing_duration
-		var head := lerpf(PlayerAttack.SWEEP_START, PlayerAttack.SWEEP_END, ease(progress, -2.5))
-		draw_arc(Vector2.ZERO, attack.sword_length, base_angle + PlayerAttack.SWEEP_START, base_angle + head, 28, Color(0.69, 0.19, 0.16, 0.72), 10.0)
+		_draw_swing_trail(base_angle)
+	_draw_sword(base_angle + attack.swing_offset())
+
+func _draw_swing_trail(base_angle: float) -> void:
+	var start_offset := attack.swing_start_offset()
+	var current_offset := attack.swing_offset()
+	var trail := PackedVector2Array()
+	for index in 24:
+		var progress := float(index) / 23.0
+		var angle := base_angle + lerpf(start_offset, current_offset, progress)
+		trail.append(Vector2.from_angle(angle) * attack.sword_length)
+	draw_polyline(trail, Color(0.69, 0.19, 0.16, 0.72), 10.0)
 
 func _draw_sword(angle: float) -> void:
 	var direction := Vector2.from_angle(angle)
