@@ -116,9 +116,11 @@ func _draw() -> void:
 		body_color.a = 0.38
 	draw_circle(Vector2.ZERO, radius, body_color)
 	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 40, Color("d4c4a4"), 2.0)
-	var base_angle := IsoMath.screen_angle(aim_direction)
-	var eye := Vector2.from_angle(base_angle) * radius * 0.5
+	var look_angle := IsoMath.screen_angle(aim_direction)
+	var eye := Vector2.from_angle(look_angle) * radius * 0.5
 	draw_circle(eye, 3.2, Color("d4c4a4"))
+	var weapon_aim := attack.swing_aim_direction if attack.swing_time > 0.0 else aim_direction
+	var base_angle := IsoMath.screen_angle(weapon_aim)
 	if attack.swing_time > 0.0:
 		_draw_swing_trail(base_angle)
 	_draw_sword(base_angle + attack.swing_offset())
