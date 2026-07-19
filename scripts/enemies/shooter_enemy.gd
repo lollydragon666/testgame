@@ -1,7 +1,7 @@
 class_name ShooterEnemy
 extends EnemyBase
 
-var shot_cooldown := 1.1
+var shot_cooldown := 1.6
 var strafe_sign := 1.0
 
 func _init() -> void:
@@ -24,7 +24,7 @@ func tick_behavior(delta: float) -> void:
 		world_position += direction * move_speed * delta
 	world_position += direction.orthogonal() * strafe_sign * move_speed * 0.42 * delta
 	if distance < 620.0 and shot_cooldown <= 0.0:
-		shot_cooldown = 1.65
+		shot_cooldown = 2.35
 		projectile_requested.emit(world_position, direction, 12.0)
 
 func _draw() -> void:
@@ -36,4 +36,3 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ONE * -hit_radius, Vector2.ONE * hit_radius * 2.0), Color("d4c4a4"), false, 2.0)
 	draw_circle(Vector2.ZERO, 7.0, Color("040303"))
 	draw_health_bar(50.0)
-

@@ -4,7 +4,7 @@ extends Node2D
 var world_position := Vector2.ZERO
 var velocity := Vector2.ZERO
 var damage := 12.0
-var hit_radius := 9.0
+var hit_radius := 14.0
 var player
 var lifetime := 6.0
 
@@ -35,6 +35,18 @@ func destroy_by_sword() -> void:
 	queue_free()
 
 func _draw() -> void:
-	var diamond := PackedVector2Array([Vector2(0.0, -11.0), Vector2(11.0, 0.0), Vector2(0.0, 11.0), Vector2(-11.0, 0.0)])
-	draw_colored_polygon(diamond, Color("af3029"))
-	draw_polyline(PackedVector2Array([diamond[0], diamond[1], diamond[2], diamond[3], diamond[0]]), Color("d4c4a4"), 2.0)
+	var direction := IsoMath.world_to_screen(velocity.normalized()).normalized()
+	var side := direction.orthogonal()
+	var tip := direction * 20.0
+	var shaft_end := tip - direction * 9.0
+	var tail := direction * -18.0
+	var red := Color("af3029")
+	draw_line(tail, shaft_end, red, 5.0)
+	draw_colored_polygon(PackedVector2Array([
+		tip,
+		shaft_end + side * 8.0,
+		shaft_end - side * 8.0
+	]), red)
+	draw_line(tail, tail + direction * 9.0 + side * 7.0, red, 3.0)
+	draw_line(tail, tail + direction * 9.0 - side * 7.0, red, 3.0)
+	draw_circle(tip, 2.2, Color("d4c4a4"))

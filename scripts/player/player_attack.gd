@@ -41,6 +41,8 @@ func _hit_group(group_name: StringName, method_name: StringName) -> void:
 		if not is_instance_valid(target) or not target.has_method(method_name):
 			continue
 		var target_radius: float = target.get("hit_radius") if target.get("hit_radius") != null else 8.0
+		if group_name == &"enemy_projectile":
+			target_radius += 7.0
 		var target_position: Vector2 = target.get("world_position")
 		if point_in_sweep(target_position, target_radius):
 			if method_name == &"take_damage":

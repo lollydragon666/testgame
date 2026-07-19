@@ -2,6 +2,7 @@ extends Node2D
 
 const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 const LOCATION_SCENE := preload("res://scenes/world/location.tscn")
+const BRAWLER_ENEMY_SCENE := preload("res://scenes/enemies/brawler_enemy.tscn")
 const MELEE_ENEMY_SCENE := preload("res://scenes/enemies/melee_enemy.tscn")
 const SHOOTER_ENEMY_SCENE := preload("res://scenes/enemies/shooter_enemy.tscn")
 const LANCER_ENEMY_SCENE := preload("res://scenes/enemies/lancer_enemy.tscn")
@@ -66,6 +67,8 @@ func _spawn_enemy(enemy_kind: String, difficulty: float) -> void:
 		return
 	var enemy: EnemyBase
 	match enemy_kind:
+		"brawler":
+			enemy = BRAWLER_ENEMY_SCENE.instantiate() as EnemyBase
 		"shooter":
 			enemy = SHOOTER_ENEMY_SCENE.instantiate() as EnemyBase
 		"lancer":

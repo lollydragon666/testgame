@@ -1,7 +1,7 @@
 class_name LancerEnemy
 extends EnemyBase
 
-var attack_cooldown := 0.5
+var attack_cooldown := 1.0
 var thrust_time := 0.0
 
 func _init() -> void:
@@ -19,7 +19,7 @@ func tick_behavior(delta: float) -> void:
 	if distance > 138.0:
 		move_toward_player(delta)
 	elif attack_cooldown <= 0.0:
-		attack_cooldown = 1.45
+		attack_cooldown = 2.05
 		thrust_time = 0.32
 		if distance <= 158.0:
 			damage_player()
@@ -34,4 +34,3 @@ func _draw() -> void:
 	draw_line(direction * 8.0, direction * extension, Color("714725"), 7.0)
 	draw_line(direction * (extension - 22.0), direction * extension, Color("d4c4a4"), 10.0)
 	draw_health_bar(58.0)
-

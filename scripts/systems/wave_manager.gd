@@ -46,13 +46,13 @@ func _process(delta: float) -> void:
 func _choose_enemy() -> String:
 	var roster: Array[String]
 	if wave == 1:
-		roster = ["melee", "melee", "shooter"]
+		roster = ["brawler", "brawler", "melee", "shooter"]
 	elif wave == 2:
-		roster = ["melee", "shooter", "melee", "lancer"]
+		roster = ["brawler", "melee", "shooter", "brawler", "lancer"]
 	elif wave <= 4:
-		roster = ["melee", "shooter", "lancer", "melee", "shooter"]
+		roster = ["brawler", "melee", "shooter", "lancer", "brawler", "shooter"]
 	else:
-		roster = ["lancer", "shooter", "melee", "lancer", "shooter", "melee"]
+		roster = ["brawler", "lancer", "shooter", "melee", "brawler", "lancer", "shooter"]
 	var enemy_kind := roster[spawn_index % roster.size()]
 	spawn_index += 1
 	return enemy_kind

@@ -1,7 +1,7 @@
 class_name BossEnemy
 extends EnemyBase
 
-var attack_cooldown := 1.2
+var attack_cooldown := 1.8
 var windup := 0.0
 var attack_applied := false
 
@@ -26,8 +26,8 @@ func tick_behavior(delta: float) -> void:
 	if distance > 142.0:
 		move_toward_player(delta)
 	elif attack_cooldown <= 0.0:
-		attack_cooldown = 3.7
-		windup = 1.28
+		attack_cooldown = 4.5
+		windup = 1.4
 		attack_applied = false
 
 func _draw() -> void:
@@ -45,4 +45,3 @@ func _draw() -> void:
 	var side := direction.orthogonal()
 	draw_colored_polygon(PackedVector2Array([head_center - side * 30.0, head_center + direction * 28.0, head_center + side * 30.0, head_center - direction * 8.0]), Color("574637"))
 	draw_health_bar(125.0)
-

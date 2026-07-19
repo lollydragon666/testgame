@@ -1,7 +1,7 @@
 class_name MeleeEnemy
 extends EnemyBase
 
-var attack_cooldown := 0.0
+var attack_cooldown := 0.45
 var weapon_phase := 0.0
 
 func _init() -> void:
@@ -19,7 +19,7 @@ func tick_behavior(delta: float) -> void:
 	if distance > 62.0:
 		distance = move_toward_player(delta)
 	if distance <= 72.0 and attack_cooldown <= 0.0:
-		attack_cooldown = 0.82
+		attack_cooldown = 1.25
 		damage_player()
 
 func _draw() -> void:
@@ -34,4 +34,3 @@ func _draw() -> void:
 	draw_line(sword_direction * 16.0, sword_direction * 58.0, Color("d4c4a4"), 6.0)
 	draw_line(sword_direction * 20.0 - sword_direction.orthogonal() * 10.0, sword_direction * 20.0 + sword_direction.orthogonal() * 10.0, Color("a8874d"), 5.0)
 	draw_health_bar(55.0)
-
