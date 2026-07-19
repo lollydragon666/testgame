@@ -26,7 +26,7 @@ func _process(delta: float) -> void:
 	age += delta
 	var distance := world_position.distance_to(player.world_position)
 	if pickup_kind == "experience" and distance < player.attack.sword_length + 42.0 and distance > 0.001:
-		var desired_velocity := (player.world_position - world_position).normalized() * (220.0 + maxf(0.0, 150.0 - distance) * 2.0)
+		var desired_velocity: Vector2 = (player.world_position - world_position).normalized() * (220.0 + maxf(0.0, 150.0 - distance) * 2.0)
 		velocity = velocity.lerp(desired_velocity, 1.0 - exp(-9.0 * delta))
 	else:
 		velocity *= exp(-6.0 * delta)
@@ -49,4 +49,3 @@ func _draw() -> void:
 	else:
 		draw_rect(Rect2(-8.0, -16.0 + bob, 16.0, 23.0), Color("547245"))
 		draw_rect(Rect2(-5.0, -21.0 + bob, 10.0, 7.0), Color("d4c4a4"))
-

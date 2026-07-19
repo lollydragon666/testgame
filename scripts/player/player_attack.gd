@@ -52,7 +52,7 @@ func point_in_sweep(target_world_position: Vector2, target_radius: float = 0.0) 
 	var relative_screen := IsoMath.world_to_screen(target_world_position - host.world_position)
 	var screen_distance := relative_screen.length()
 	var target_screen_radius := maxf(0.0, target_radius) * 1.05
-	var blade_base := host.radius + 11.0
+	var blade_base: float = float(host.radius) + 11.0
 	if screen_distance + target_screen_radius < blade_base:
 		return false
 	if screen_distance - target_screen_radius > sword_length:
@@ -84,4 +84,3 @@ func reset() -> void:
 	sword_tier = 1
 	cooldown = 0.0
 	swing_time = 0.0
-
