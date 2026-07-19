@@ -6,6 +6,8 @@ const BRAWLER_ENEMY_SCENE := preload("res://scenes/enemies/brawler_enemy.tscn")
 const MELEE_ENEMY_SCENE := preload("res://scenes/enemies/melee_enemy.tscn")
 const SHOOTER_ENEMY_SCENE := preload("res://scenes/enemies/shooter_enemy.tscn")
 const LANCER_ENEMY_SCENE := preload("res://scenes/enemies/lancer_enemy.tscn")
+const LIGHTNING_MAGE_SCENE := preload("res://scenes/enemies/lightning_mage.tscn")
+const FIRE_MAGE_SCENE := preload("res://scenes/enemies/fire_mage.tscn")
 const BOSS_ENEMY_SCENE := preload("res://scenes/enemies/boss_enemy.tscn")
 
 var location: GameLocation
@@ -27,6 +29,8 @@ func _ready() -> void:
 	player.health_changed.connect(_on_health_changed)
 	player.experience_changed.connect(_on_experience_changed)
 	player.level_up_requested.connect(_on_level_up)
+	player.magic_cast_requested.connect(_spawn_player_magic)
+	player.magic_changed.connect(_on_magic_changed)
 	player.died.connect(_on_player_died)
 	player.set_process(false)
 
@@ -45,6 +49,7 @@ func _ready() -> void:
 	ui.set_health(player.health, player.max_health)
 	ui.set_experience(player.experience, player.experience_required, player.level)
 	ui.set_wave(1)
+	ui.set_magic("", 0)
 
 func _start_run() -> void:
 	get_tree().paused = false
@@ -57,7 +62,7 @@ func _start_run() -> void:
 	ui.show_game()
 
 func _clear_runtime_nodes() -> void:
-	for group_name in [&"enemy", &"enemy_projectile", &"pickup"]:
+	for group_name in [&"enemy", &"enemy_projectile", &"player_magic_projectile", &"pickup"]:
 		for node in get_tree().get_nodes_in_group(group_name):
 			if is_instance_valid(node):
 				node.queue_free()
@@ -73,6 +78,10 @@ func _spawn_enemy(enemy_kind: String, difficulty: float) -> void:
 			enemy = SHOOTER_ENEMY_SCENE.instantiate() as EnemyBase
 		"lancer":
 			enemy = LANCER_ENEMY_SCENE.instantiate() as EnemyBase
+		"lightning_mage":
+			enemy = LIGHTNING_MAGE_SCENE.instantiate() as EnemyBase
+		"fire_mage":
+			enemy = FIRE_MAGE_SCENE.instantiate() as EnemyBase
 		"boss":
 			enemy = BOSS_ENEMY_SCENE.instantiate() as EnemyBase
 		_:
@@ -84,11 +93,22 @@ func _spawn_enemy(enemy_kind: String, difficulty: float) -> void:
 	enemy.setup(player, spawn_position, difficulty)
 	enemy.died.connect(_on_enemy_died)
 	enemy.projectile_requested.connect(_spawn_projectile)
+	enemy.spell_requested.connect(_spawn_enemy_spell)
 	add_child(enemy)
 
 func _spawn_projectile(origin: Vector2, direction: Vector2, damage: float) -> void:
 	var projectile := EnemyProjectile.new()
 	projectile.setup(player, origin, direction, damage)
+	add_child(projectile)
+
+func _spawn_player_magic(spell_kind: String, origin: Vector2, direction: Vector2, damage: float, spell_level: int) -> void:
+	var projectile := PlayerMagicProjectile.new()
+	projectile.setup(spell_kind, origin, direction, damage, spell_level)
+	add_child(projectile)
+
+func _spawn_enemy_spell(spell_kind: String, origin: Vector2, direction: Vector2, damage: float) -> void:
+	var projectile := EnemySpellProjectile.new()
+	projectile.setup(player, spell_kind, origin, direction, damage)
 	add_child(projectile)
 
 func _spawn_potion(spawn_position: Vector2) -> void:
@@ -144,8 +164,13 @@ func _apply_upgrade(kind: String) -> void:
 			player.upgrade_speed()
 		"vitality":
 			player.upgrade_vitality()
+		"lightning", "fireball":
+			player.magic.unlock_or_upgrade(kind)
 	ui.hide_upgrade()
 	get_tree().paused = false
+
+func _on_magic_changed(spell_kind: String, spell_level: int) -> void:
+	ui.set_magic(spell_kind, spell_level)
 
 func _on_player_died() -> void:
 	running = false

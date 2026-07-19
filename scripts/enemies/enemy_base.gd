@@ -3,6 +3,7 @@ extends Node2D
 
 signal died(enemy, experience_value: int)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: float)
+signal spell_requested(spell_kind: String, origin: Vector2, direction: Vector2, damage: float)
 
 var world_position := Vector2.ZERO
 var player

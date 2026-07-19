@@ -5,6 +5,8 @@ signal died
 signal health_changed(current: float, maximum: float)
 signal experience_changed(current: int, required: int, level: int)
 signal level_up_requested(level: int)
+signal magic_cast_requested(spell_kind: String, origin: Vector2, direction: Vector2, damage: float, spell_level: int)
+signal magic_changed(spell_kind: String, spell_level: int)
 
 @export var world_limit := 3600.0
 
@@ -21,6 +23,7 @@ var is_alive := true
 
 var movement: PlayerMovement
 var attack: PlayerAttack
+var magic: PlayerMagic
 
 func _ready() -> void:
 	movement = PlayerMovement.new()
@@ -30,6 +33,12 @@ func _ready() -> void:
 	attack.name = "Attack"
 	add_child(attack)
 	attack.setup(self)
+	magic = PlayerMagic.new()
+	magic.name = "Magic"
+	add_child(magic)
+	magic.setup(self)
+	magic.cast_requested.connect(_relay_magic_cast)
+	magic.magic_changed.connect(_relay_magic_changed)
 	var camera := Camera2D.new()
 	camera.name = "Camera"
 	camera.position_smoothing_enabled = true
@@ -48,7 +57,15 @@ func _process(delta: float) -> void:
 	position = IsoMath.world_to_screen(world_position)
 	if Input.is_action_just_pressed("attack"):
 		attack.try_attack()
+	if Input.is_action_just_pressed("cast_magic"):
+		magic.try_cast()
 	queue_redraw()
+
+func _relay_magic_cast(spell_kind: String, origin: Vector2, direction: Vector2, damage: float, spell_level: int) -> void:
+	magic_cast_requested.emit(spell_kind, origin, direction, damage, spell_level)
+
+func _relay_magic_changed(spell_kind: String, spell_level: int) -> void:
+	magic_changed.emit(spell_kind, spell_level)
 
 func _update_aim() -> void:
 	var viewport_center := get_viewport_rect().size * 0.5
@@ -103,6 +120,7 @@ func reset_run() -> void:
 	movement.speed = 195.0
 	movement.reset()
 	attack.reset()
+	magic.reset()
 	health_changed.emit(health, max_health)
 	experience_changed.emit(experience, experience_required, level)
 	queue_redraw()

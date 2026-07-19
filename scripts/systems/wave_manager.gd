@@ -48,11 +48,11 @@ func _choose_enemy() -> String:
 	if wave == 1:
 		roster = ["brawler", "brawler", "melee", "shooter"]
 	elif wave == 2:
-		roster = ["brawler", "melee", "shooter", "brawler", "lancer"]
+		roster = ["brawler", "lightning_mage", "melee", "shooter", "brawler", "lancer"]
 	elif wave <= 4:
-		roster = ["brawler", "melee", "shooter", "lancer", "brawler", "shooter"]
+		roster = ["brawler", "melee", "lightning_mage", "shooter", "lancer", "brawler", "shooter"]
 	else:
-		roster = ["brawler", "lancer", "shooter", "melee", "brawler", "lancer", "shooter"]
+		roster = ["brawler", "lightning_mage", "lancer", "fire_mage", "shooter", "melee", "brawler"]
 	var enemy_kind := roster[spawn_index % roster.size()]
 	spawn_index += 1
 	return enemy_kind

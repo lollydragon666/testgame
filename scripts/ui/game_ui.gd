@@ -14,6 +14,7 @@ var xp_bar: ProgressBar
 var xp_label: Label
 var wave_label: Label
 var level_label: Label
+var magic_label: Label
 var game_over_title: Label
 
 func _ready() -> void:
@@ -61,6 +62,11 @@ func _build_menu() -> void:
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	controls.add_theme_color_override("font_color", Color("d4c4a4"))
 	box.add_child(controls)
+	var magic_controls := Label.new()
+	magic_controls.text = "ПКМ — выбранное заклинание"
+	magic_controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	magic_controls.add_theme_color_override("font_color", Color("7fa9d8"))
+	box.add_child(magic_controls)
 
 func _build_hud() -> void:
 	hud = Control.new()
@@ -90,6 +96,13 @@ func _build_hud() -> void:
 	level_label.position = Vector2(1110.0, 24.0)
 	level_label.add_theme_font_size_override("font_size", 20)
 	hud.add_child(level_label)
+	magic_label = Label.new()
+	magic_label.position = Vector2(900.0, 665.0)
+	magic_label.size = Vector2(350.0, 30.0)
+	magic_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	magic_label.add_theme_font_size_override("font_size", 18)
+	magic_label.add_theme_color_override("font_color", Color("7fa9d8"))
+	hud.add_child(magic_label)
 
 func _build_upgrade_panel() -> void:
 	upgrade_panel = ColorRect.new()
@@ -98,9 +111,9 @@ func _build_upgrade_panel() -> void:
 	add_child(upgrade_panel)
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_CENTER)
-	box.position = Vector2(-270.0, -230.0)
-	box.size = Vector2(540.0, 460.0)
-	box.add_theme_constant_override("separation", 16)
+	box.position = Vector2(-280.0, -300.0)
+	box.size = Vector2(560.0, 600.0)
+	box.add_theme_constant_override("separation", 12)
 	upgrade_panel.add_child(box)
 	var title := Label.new()
 	title.text = "ВЫБЕРИ ДАР БЕЗДНЫ"
@@ -109,6 +122,11 @@ func _build_upgrade_panel() -> void:
 	title.add_theme_color_override("font_color", Color("d0ad64"))
 	box.add_child(title)
 	for option in [["sword", "МЕЧ — длина, модель и урон"], ["speed", "ДВИЖЕНИЕ — скорость героя"], ["vitality", "ЖИВУЧЕСТЬ — здоровье и размер"]]:
+		var choice := _button(String(option[1]))
+		choice.pressed.connect(_emit_upgrade.bind(String(option[0])))
+		box.add_child(choice)
+
+	for option in [["lightning", "МОЛНИЯ — быстрый синий разряд"], ["fireball", "ФАЕРБОЛ — красный взрывной шар"]]:
 		var choice := _button(String(option[1]))
 		choice.pressed.connect(_emit_upgrade.bind(String(option[0])))
 		box.add_child(choice)
@@ -180,3 +198,12 @@ func set_experience(current: int, required: int, level: int) -> void:
 
 func set_wave(value: int) -> void:
 	wave_label.text = "ВОЛНА %d / 7" % value
+
+func set_magic(spell_kind: String, spell_level: int) -> void:
+	match spell_kind:
+		"lightning":
+			magic_label.text = "МАГИЯ: МОЛНИЯ · УР. %d · ПКМ" % spell_level
+		"fireball":
+			magic_label.text = "МАГИЯ: ФАЕРБОЛ · УР. %d · ПКМ" % spell_level
+		_:
+			magic_label.text = "МАГИЯ: НЕ ВЫБРАНА · ПКМ"
