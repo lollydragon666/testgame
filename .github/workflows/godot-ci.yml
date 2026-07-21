@@ -1,0 +1,85 @@
+name: Godot CI and Web Export
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GODOT_VERSION: "4.7.1"
+  GODOT_RELEASE: "4.7.1-stable"
+
+jobs:
+  test-and-export:
+    name: Headless tests and Web artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Godot and Web templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_url="https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}"
+          curl --fail --location --retry 3 \
+            --output "${RUNNER_TEMP}/godot.zip" \
+            "${release_url}/Godot_v${GODOT_RELEASE}_linux.x86_64.zip"
+          unzip -q "${RUNNER_TEMP}/godot.zip" -d "${RUNNER_TEMP}/godot"
+          sudo install -m 0755 \
+            "${RUNNER_TEMP}/godot/Godot_v${GODOT_RELEASE}_linux.x86_64" \
+            /usr/local/bin/godot
+
+          curl --fail --location --retry 3 \
+            --output "${RUNNER_TEMP}/templates.tpz" \
+            "${release_url}/Godot_v${GODOT_RELEASE}_export_templates.tpz"
+          unzip -q "${RUNNER_TEMP}/templates.tpz" -d "${RUNNER_TEMP}/export-templates"
+          template_dir="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "${template_dir}"
+          cp -R "${RUNNER_TEMP}/export-templates/templates/." "${template_dir}/"
+          godot --version
+
+      - name: Import project and compile scripts
+        run: godot --headless --editor --path . --quit
+
+      - name: Validate resources and referenced files
+        run: godot --headless --path . --script res://tests/test_resource_validation.gd
+
+      - name: Run headless test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test_file in tests/test_*.gd; do
+            case "${test_file}" in
+              tests/test_resource_validation.gd|tests/test_smoke.gd) continue ;;
+            esac
+            echo "Running ${test_file}"
+            godot --headless --path . --script "res://${test_file}"
+          done
+
+      - name: Smoke test main scene
+        run: godot --headless --path . --script res://tests/test_smoke.gd
+
+      - name: Export Web build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p builds/web
+          godot --headless --path . --export-release Web builds/web/index.html
+          test -s builds/web/index.html
+          test -n "$(find builds/web -maxdepth 1 -type f -name '*.wasm' -print -quit)"
+          test -n "$(find builds/web -maxdepth 1 -type f -name '*.pck' -print -quit)"
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: circle-raider-web-${{ github.sha }}
+          path: builds/web/
+          if-no-files-found: error
+          retention-days: 14
+

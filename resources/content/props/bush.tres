@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PropDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/prop_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"bush"
+spawn_count = 120
+visual_radius = 30.0
+collision_radius = 30.0
+potion_chance = 0.2
+

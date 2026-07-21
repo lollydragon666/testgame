@@ -14,7 +14,8 @@ var hit_pending := false
 
 func _init() -> void:
 	enemy_kind = GameIds.ENEMY_LANCER
-	hit_radius = 27.0
+	visual_radius = 27.0
+	collision_radius = 27.0
 	max_health = 96.0
 	move_speed = 70.0
 	contact_damage = 18.0
@@ -38,14 +39,3 @@ func tick_behavior(delta: float) -> void:
 		attack_cooldown = 2.05
 		thrust_time = THRUST_DURATION
 		hit_pending = true
-
-func _draw() -> void:
-	var body := health_color(Color("806a45"))
-	var diamond := PackedVector2Array([Vector2(0.0, -hit_radius), Vector2(hit_radius, 0.0), Vector2(0.0, hit_radius), Vector2(-hit_radius, 0.0)])
-	draw_colored_polygon(diamond, body)
-	draw_polyline(PackedVector2Array([diamond[0], diamond[1], diamond[2], diamond[3], diamond[0]]), Color("574637"), 2.0)
-	var direction := IsoMath.world_to_screen((player.world_position - world_position).normalized()).normalized()
-	var extension := 95.0 if thrust_time > 0.0 else 65.0
-	draw_line(direction * 8.0, direction * extension, Color("714725"), 7.0)
-	draw_line(direction * (extension - 22.0), direction * extension, Color("d4c4a4"), 10.0)
-	draw_health_bar(58.0)

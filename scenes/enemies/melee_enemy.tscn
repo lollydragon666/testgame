@@ -1,7 +1,24 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
-[ext_resource path="res://scripts/enemies/melee_enemy.gd" type="Script" id="1_melee"]
+[ext_resource path="res://scripts/enemies/melee_enemy.gd" type="Script" id="1_behavior"]
+[ext_resource path="res://scripts/enemies/enemy_visual.gd" type="Script" id="2_visual"]
+[ext_resource path="res://scripts/entities/entity_hurtbox.gd" type="Script" id="3_hurtbox"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_enemy"]
+resource_local_to_scene = true
+radius = 25.0
 
 [node name="MeleeEnemy" type="Node2D"]
-script = ExtResource("1_melee")
+script = ExtResource("1_behavior")
 
+[node name="VisualRoot" type="Node2D" parent="."]
+script = ExtResource("2_visual")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+script = ExtResource("3_hurtbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_enemy")

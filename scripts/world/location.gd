@@ -7,6 +7,7 @@ signal potion_requested(world_position: Vector2)
 @export var tile_size := 180.0
 
 var world_config: WorldConfig
+var game_content: GameContent
 ## Постоянный WorldRoot: пропсы должны быть соседями героя и врагов для общей Y-сортировки.
 var props_parent: Node2D
 ## Список нужен для регенерации карты и заполнения реестра разрушаемых объектов.
@@ -17,8 +18,9 @@ var world_limit: float:
 	get:
 		return world_config.world_limit if world_config != null else 0.0
 
-func configure(config: WorldConfig, parent: Node2D) -> void:
+func configure(config: WorldConfig, content: GameContent, parent: Node2D) -> void:
 	world_config = config
+	game_content = content
 	props_parent = parent
 
 func _ready() -> void:
@@ -49,16 +51,16 @@ func regenerate(seed_value: int = 0) -> void:
 		random.randomize()
 	else:
 		random.seed = seed_value
-	_generate_kind(GameIds.PROP_BUSH, 120)
-	_generate_kind(GameIds.PROP_BARREL, 64)
-	_generate_kind(GameIds.PROP_TREE, 46)
+	for definition in game_content.props:
+		_generate_kind(definition)
 
-func _generate_kind(kind: StringName, count: int) -> void:
+func _generate_kind(definition: PropDefinition) -> void:
 	# Ограничение попыток защищает от бесконечного цикла при слишком плотной генерации.
 	var positions: Array[Vector2] = []
 	for prop in generated_props:
 		if is_instance_valid(prop):
 			positions.append(prop.world_position)
+	var count := definition.spawn_count
 	var requested_count := count
 	var max_attempts := requested_count * 45 + 200
 	var attempts := 0
@@ -78,7 +80,7 @@ func _generate_kind(kind: StringName, count: int) -> void:
 		if blocked:
 			continue
 		var prop := WorldProp.new()
-		prop.setup(kind, candidate, random.randf_range(0.0, TAU))
+		prop.setup(definition, candidate, random.randf_range(0.0, TAU))
 		prop.potion_requested.connect(_relay_potion)
 		props_parent.add_child(prop)
 		generated_props.append(prop)

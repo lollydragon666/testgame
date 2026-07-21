@@ -11,9 +11,13 @@ var world_position := Vector2.ZERO
 var player: PlayerHero
 ## Идентификатор вида врага из GameIds используется фабрикой, волнами и обработкой босса.
 var enemy_kind: StringName = GameIds.ENEMY_BASE
+var definition: EnemyDefinition
 var world_config: WorldConfig
-## Радиус тела для попаданий мечом и магией.
-var hit_radius := 24.0
+var world_state: WorldState
+## Размер модели в VisualRoot; изменение не влияет на попадания.
+var visual_radius := 24.0
+## Радиус world-space Hurtbox для меча, магии и снарядов.
+var collision_radius := 24.0
 var max_health := 70.0
 var health := 70.0
 ## Скорость в мировых координатах за секунду.
@@ -24,33 +28,54 @@ var contact_damage := 12.0
 var experience_value := 18
 var hit_flash := 0.0
 var is_alive := true
+@onready var visual_root: EnemyVisual = $VisualRoot
+@onready var hurtbox: EntityHurtbox = $Hurtbox
 
 func _ready() -> void:
 	add_to_group("enemy")
+	hurtbox.set_collision_radius(collision_radius)
 	position = IsoMath.world_to_screen(world_position)
-	queue_redraw()
+	refresh_visual()
 
-func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float, config: WorldConfig) -> void:
+func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float, config: WorldConfig, enemy_definition: EnemyDefinition = null) -> void:
 	# difficulty усиливает характеристики по номеру волны, но не меняет радиус модели.
 	player = player_target
 	world_position = spawn_position
 	world_config = config
+	definition = enemy_definition
+	if definition != null:
+		enemy_kind = definition.id
+		visual_radius = definition.visual_radius
+		collision_radius = definition.collision_radius
+		max_health = definition.max_health
+		move_speed = definition.move_speed
+		contact_damage = definition.contact_damage
+		experience_value = definition.experience_value
 	max_health *= difficulty
 	health = max_health
 	move_speed *= 1.0 + (difficulty - 1.0) * 0.12
 	contact_damage *= 1.0 + (difficulty - 1.0) * 0.16
 
-func _process(delta: float) -> void:
+func set_world_state(state: WorldState) -> void:
+	world_state = state
+
+func _physics_process(delta: float) -> void:
 	if not is_alive or player == null or world_config == null or not player.is_alive:
 		return
 	hit_flash = maxf(0.0, hit_flash - delta)
+	var previous_position := world_position
 	tick_behavior(delta)
+	if world_state != null:
+		world_position += world_state.enemy_separation(self, world_config.enemy_separation_radius) * world_config.enemy_separation_speed * delta
+		world_position = world_state.resolve_obstacle_motion(previous_position, world_position, collision_radius)
 	world_position = world_position.clamp(
 		Vector2.ONE * -world_config.world_limit,
 		Vector2.ONE * world_config.world_limit
 	)
+	if world_state != null:
+		world_state.update_enemy(self)
 	position = IsoMath.world_to_screen(world_position)
-	queue_redraw()
+	refresh_visual()
 
 func tick_behavior(delta: float) -> void:
 	move_toward_player(delta)
@@ -68,7 +93,11 @@ func take_damage(amount: float, knockback_direction: Vector2 = Vector2.ZERO) -> 
 		return
 	health -= amount
 	hit_flash = 0.15
+	refresh_visual()
 	world_position += knockback_direction.normalized() * 18.0
+	if world_state != null:
+		world_position = world_state.resolve_obstacle_motion(world_position - knockback_direction.normalized() * 18.0, world_position, collision_radius)
+		world_state.update_enemy(self)
 	if health <= 0.0:
 		is_alive = false
 		died.emit(self, experience_value)
@@ -78,12 +107,5 @@ func damage_player(amount: float = -1.0) -> void:
 	if player != null:
 		player.take_damage(contact_damage if amount < 0.0 else amount)
 
-func health_color(base_color: Color) -> Color:
-	return Color("d4c4a4") if hit_flash > 0.0 else base_color
-
-func draw_health_bar(width: float) -> void:
-	if health >= max_health:
-		return
-	var ratio := clampf(health / max_health, 0.0, 1.0)
-	draw_rect(Rect2(-width * 0.5, -hit_radius - 17.0, width, 4.0), Color(0.05, 0.03, 0.025, 0.8))
-	draw_rect(Rect2(-width * 0.5, -hit_radius - 17.0, width * ratio, 4.0), Color("af3029"))
+func refresh_visual() -> void:
+	visual_root.queue_redraw()

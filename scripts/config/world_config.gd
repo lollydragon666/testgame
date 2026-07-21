@@ -15,6 +15,16 @@ extends Resource
 ## Минимальная дистанция между двумя объектами окружения.
 @export var prop_minimum_spacing := 82.0
 
+@export_group("Spatial Index")
+## Размер ячейки grid-сетки. Боевые запросы читают только пересекаемые ячейки.
+@export var spatial_cell_size := 180.0
+## Дополнительный свободный зазор между новым врагом и занятыми областями.
+@export var enemy_spawn_clearance := 18.0
+## Радиус поиска соседей для взаимного расталкивания врагов.
+@export var enemy_separation_radius := 76.0
+## Максимальная скорость корректирующего separation-смещения.
+@export var enemy_separation_speed := 105.0
+
 @export_group("Experience Magnet")
 ## Добавка к длине меча, определяющая радиус притяжения опыта.
 @export var pickup_magnet_extra_range := 42.0
@@ -32,6 +42,12 @@ extends Resource
 @export var wave_duration := 18.0
 ## Жёсткий лимит одновременно живущих обычных врагов.
 @export var max_active_enemies := 120
+## Лимит отбиваемых вражеских стрел и заклинаний.
+@export var max_enemy_projectiles := 180
+## Лимит одновременно активных снарядов игрока.
+@export var max_player_projectiles := 64
+## Общий лимит сфер опыта и лечебных бутылок.
+@export var max_pickups := 320
 ## Задержка до первого противника после начала забега.
 @export var first_spawn_delay := 0.35
 ## Нижняя граница интервала появления врагов.

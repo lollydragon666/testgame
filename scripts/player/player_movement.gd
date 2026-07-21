@@ -11,9 +11,8 @@ extends Node
 ## Сохраняется между кадрами, чтобы движение было плавным, а не рывками.
 var velocity := Vector2.ZERO
 
-func step(delta: float, current_position: Vector2, world_limit: float) -> Vector2:
-	# WASD задаёт экранное направление, затем оно переводится в оси изометрического мира.
-	var screen_input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+func step(delta: float, current_position: Vector2, world_limit: float, screen_input: Vector2) -> Vector2:
+	# InputState передаёт WASD в экранных осях, затем направление переводится в оси мира.
 	var world_input := Vector2.ZERO
 	if screen_input.length_squared() > 0.0:
 		world_input = IsoMath.world_direction_from_screen(screen_input)

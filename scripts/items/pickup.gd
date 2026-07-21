@@ -10,7 +10,8 @@ var player: PlayerHero
 ## Используется магнитом опыта; бутылки постепенно гасят случайный импульс.
 var velocity := Vector2.ZERO
 var age := 0.0
-var hit_radius := 10.0
+var visual_radius := 10.0
+var collision_radius := 10.0
 
 func setup(player_target: PlayerHero, kind: StringName, spawn_position: Vector2, amount: int) -> void:
 	player = player_target
@@ -23,7 +24,7 @@ func _ready() -> void:
 	position = IsoMath.world_to_screen(world_position)
 	queue_redraw()
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if player == null or not player.is_alive:
 		return
 	age += delta
@@ -38,7 +39,7 @@ func _process(delta: float) -> void:
 	position = IsoMath.world_to_screen(world_position)
 	# После движения дистанция считается заново, чтобы быстрый предмет подобрался в этот же кадр.
 	var updated_distance := world_position.distance_to(player.world_position)
-	if updated_distance <= player.radius + hit_radius:
+	if updated_distance <= player.collision_radius + collision_radius:
 		if pickup_kind == GameIds.PICKUP_EXPERIENCE:
 			player.add_experience(value)
 		else:
@@ -50,7 +51,7 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var bob := sin(age * 4.8) * 4.0
 	if pickup_kind == GameIds.PICKUP_EXPERIENCE:
-		var diamond := PackedVector2Array([Vector2(0.0, -10.0 + bob), Vector2(9.0, bob), Vector2(0.0, 10.0 + bob), Vector2(-9.0, bob)])
+		var diamond := PackedVector2Array([Vector2(0.0, -visual_radius + bob), Vector2(visual_radius * 0.9, bob), Vector2(0.0, visual_radius + bob), Vector2(-visual_radius * 0.9, bob)])
 		draw_colored_polygon(diamond, Color("d0ad64"))
 		draw_polyline(PackedVector2Array([diamond[0], diamond[1], diamond[2], diamond[3], diamond[0]]), Color("d4c4a4"), 1.5)
 	else:

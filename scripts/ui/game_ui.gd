@@ -24,14 +24,23 @@ var wave_label: Label
 var level_label: Label
 var magic_label: Label
 var game_over_title: Label
-var upgrade_buttons: Array[Button] = []
+var upgrade_buttons: Dictionary[StringName, Button] = {}
 var upgrade_delay_timer: Timer
 ## Пока true, кнопки улучшений игнорируют ввод.
 var upgrade_selection_locked := true
 ## Босс отображается отдельным состоянием, а не как восьмая обычная волна.
 var combat_display_state := CombatDisplayState.WAVES
+var game_content: GameContent
+var total_waves := 1
+
+func configure_content(content: GameContent) -> void:
+	game_content = content
+	total_waves = maxi(1, content.wave_count())
 
 func _ready() -> void:
+	if game_content == null:
+		push_error("GameUI requires GameContent before entering the tree")
+		return
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_menu()
 	_build_hud()
@@ -166,17 +175,11 @@ func _build_upgrade_panel() -> void:
 	title.add_theme_font_size_override("font_size", 34)
 	title.add_theme_color_override("font_color", Color("d0ad64"))
 	box.add_child(title)
-	for option in [[GameIds.UPGRADE_SWORD, "МЕЧ — длина, модель и урон"], [GameIds.UPGRADE_SPEED, "ДВИЖЕНИЕ — скорость героя"], [GameIds.UPGRADE_VITALITY, "ЖИВУЧЕСТЬ — здоровье и размер"]]:
-		var choice := _button(String(option[1]))
-		choice.pressed.connect(_emit_upgrade.bind(StringName(option[0])))
+	for definition in game_content.upgrades:
+		var choice := _button(definition.display_name)
+		choice.pressed.connect(_emit_upgrade.bind(definition.id))
 		box.add_child(choice)
-		upgrade_buttons.append(choice)
-
-	for option in [[GameIds.SPELL_LIGHTNING, "МОЛНИЯ — быстрый синий разряд"], [GameIds.SPELL_FIREBALL, "ФАЕРБОЛ — красный взрывной шар"]]:
-		var choice := _button(String(option[1]))
-		choice.pressed.connect(_emit_upgrade.bind(StringName(option[0])))
-		box.add_child(choice)
-		upgrade_buttons.append(choice)
+		upgrade_buttons[definition.id] = choice
 
 	upgrade_delay_timer = Timer.new()
 	upgrade_delay_timer.name = "UpgradeInputDelay"
@@ -194,13 +197,16 @@ func _emit_upgrade(kind: StringName) -> void:
 	upgrade_selected.emit(kind)
 
 func _set_upgrade_buttons_disabled(disabled: bool) -> void:
-	for button in upgrade_buttons:
+	for kind in upgrade_buttons:
+		var button: Button = upgrade_buttons[kind]
 		button.disabled = disabled
 
 func _unlock_upgrade_buttons() -> void:
 	if upgrade_panel.visible:
 		upgrade_selection_locked = false
-		_set_upgrade_buttons_disabled(false)
+		for kind in upgrade_buttons:
+			var button: Button = upgrade_buttons[kind]
+			button.disabled = not button.visible
 
 func _build_game_over_panel() -> void:
 	game_over_panel = ColorRect.new()
@@ -244,9 +250,12 @@ func show_game() -> void:
 	upgrade_panel.visible = false
 	game_over_panel.visible = false
 
-func show_upgrade() -> void:
+func show_upgrade(available_upgrades: Array[StringName]) -> void:
 	upgrade_selection_locked = true
-	_set_upgrade_buttons_disabled(true)
+	for kind in upgrade_buttons:
+		var button: Button = upgrade_buttons[kind]
+		button.visible = available_upgrades.has(kind)
+		button.disabled = true
 	upgrade_delay_timer.start()
 	upgrade_panel.visible = true
 	hud.visible = false
@@ -280,7 +289,7 @@ func set_experience(current: int, required: int, level: int) -> void:
 func set_wave(value: int) -> void:
 	combat_display_state = CombatDisplayState.WAVES
 	wave_label.add_theme_color_override("font_color", Color("d4c4a4"))
-	wave_label.text = "ВОЛНА %d / 7" % value
+	wave_label.text = "ВОЛНА %d / %d" % [value, total_waves]
 
 func set_boss_state() -> void:
 	combat_display_state = CombatDisplayState.BOSS
@@ -288,12 +297,12 @@ func set_boss_state() -> void:
 	wave_label.text = "БОСС"
 
 func set_magic(spell_kind: StringName, spell_level: int) -> void:
-	match spell_kind:
-		GameIds.SPELL_LIGHTNING:
-			magic_label.text = "МАГИЯ: МОЛНИЯ · УР. %d · ПКМ" % spell_level
-		GameIds.SPELL_FIREBALL:
-			magic_label.text = "МАГИЯ: ФАЕРБОЛ · УР. %d · ПКМ" % spell_level
-		&"":
-			magic_label.text = "МАГИЯ: НЕ ВЫБРАНА · ПКМ"
-		_:
-			push_error("Unknown UI spell: %s" % spell_kind)
+	if spell_kind.is_empty():
+		magic_label.text = "МАГИЯ: НЕ ВЫБРАНА · ПКМ"
+		return
+	var definition := game_content.spell(spell_kind)
+	if definition == null:
+		push_error("Unknown UI spell: %s" % spell_kind)
+		return
+	var short_name := definition.display_name.get_slice(" — ", 0)
+	magic_label.text = "МАГИЯ: %s · УР. %d · ПКМ" % [short_name, spell_level]

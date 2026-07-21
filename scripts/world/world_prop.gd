@@ -4,29 +4,24 @@ extends Node2D
 signal potion_requested(world_position: Vector2)
 
 var prop_kind: StringName = GameIds.PROP_BUSH
+var definition: PropDefinition
 var world_position := Vector2.ZERO
 ## Радиус попадания мечом; у дерева используется только как размер объекта.
-var hit_radius := 28.0
+var visual_radius := 28.0
+var collision_radius := 28.0
 ## Деревья блокируют визуальное пространство, но не входят в боевой реестр меча.
 var destructible := true
 ## Случайный поворот раскладки листьев, чтобы кусты не выглядели одинаково.
 var variant := 0.0
 
-func setup(kind: StringName, spawn_position: Vector2, visual_variant: float = 0.0) -> void:
-	prop_kind = kind
+func setup(prop_definition: PropDefinition, spawn_position: Vector2, visual_variant: float = 0.0) -> void:
+	definition = prop_definition
+	prop_kind = definition.id
 	world_position = spawn_position
 	variant = visual_variant
-	match prop_kind:
-		GameIds.PROP_TREE:
-			hit_radius = 44.0
-			destructible = false
-		GameIds.PROP_BARREL:
-			hit_radius = 25.0
-		GameIds.PROP_BUSH:
-			hit_radius = 30.0
-		_:
-			push_error("Unknown world prop kind: %s" % prop_kind)
-			destructible = false
+	visual_radius = definition.visual_radius
+	collision_radius = definition.collision_radius
+	destructible = definition.destructible
 
 func _ready() -> void:
 	if destructible:
@@ -38,8 +33,7 @@ func hit_by_sword() -> void:
 	if not destructible:
 		return
 	# Лечение выпадает только из части разрушаемых объектов, а не из врагов.
-	var potion_chance := 0.42 if prop_kind == GameIds.PROP_BARREL else 0.20
-	if randf() < potion_chance:
+	if randf() < definition.potion_chance:
 		potion_requested.emit(world_position)
 	queue_free()
 
