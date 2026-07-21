@@ -5,7 +5,7 @@ var shot_cooldown := 1.6
 var strafe_sign := 1.0
 
 func _init() -> void:
-	enemy_kind = "shooter"
+	enemy_kind = GameIds.ENEMY_SHOOTER
 	hit_radius = 22.0
 	max_health = 54.0
 	move_speed = 62.0

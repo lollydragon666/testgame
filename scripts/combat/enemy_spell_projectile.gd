@@ -1,26 +1,30 @@
 class_name EnemySpellProjectile
-extends Node2D
+extends DeflectableProjectile
 
-var spell_kind := "lightning"
-var world_position := Vector2.ZERO
+var spell_kind: StringName = GameIds.SPELL_LIGHTNING
 var velocity := Vector2.ZERO
 var damage := 14.0
-var hit_radius := 15.0
-var player
+var player: PlayerHero
 var lifetime := 6.0
 var age := 0.0
 
-func setup(player_target, kind: String, origin: Vector2, direction: Vector2, projectile_damage: float) -> void:
+func _init() -> void:
+	hit_radius = 15.0
+
+func setup(player_target: PlayerHero, kind: StringName, origin: Vector2, direction: Vector2, projectile_damage: float) -> void:
 	player = player_target
 	spell_kind = kind
 	world_position = origin
 	damage = projectile_damage
-	if spell_kind == "lightning":
-		velocity = direction.normalized() * 390.0
-		hit_radius = 15.0
-	else:
-		velocity = direction.normalized() * 255.0
-		hit_radius = 19.0
+	match spell_kind:
+		GameIds.SPELL_LIGHTNING:
+			velocity = direction.normalized() * 390.0
+			hit_radius = 15.0
+		GameIds.SPELL_FIREBALL:
+			velocity = direction.normalized() * 255.0
+			hit_radius = 19.0
+		_:
+			push_error("Unknown enemy projectile spell: %s" % spell_kind)
 
 func _ready() -> void:
 	add_to_group("enemy_projectile")
@@ -38,15 +42,13 @@ func _process(delta: float) -> void:
 	if player != null and world_position.distance_to(player.world_position) <= hit_radius + player.radius:
 		player.take_damage(damage)
 		queue_free()
+		return
 	queue_redraw()
-
-func destroy_by_sword() -> void:
-	queue_free()
 
 func _draw() -> void:
 	var direction := IsoMath.world_to_screen(velocity.normalized()).normalized()
 	var side := direction.orthogonal()
-	if spell_kind == "lightning":
+	if spell_kind == GameIds.SPELL_LIGHTNING:
 		var points := PackedVector2Array([
 			direction * -22.0 + side * 2.0,
 			direction * -7.0 - side * 5.0,
@@ -60,4 +62,3 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, 16.0 + pulse, Color(0.48, 0.02, 0.01, 0.5))
 		draw_circle(Vector2.ZERO, 12.0 + pulse * 0.5, Color("c92e1c"))
 		draw_circle(direction * 3.0, 5.0, Color("ff9b42"))
-

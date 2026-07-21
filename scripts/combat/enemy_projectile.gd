@@ -1,19 +1,20 @@
 class_name EnemyProjectile
-extends Node2D
+extends DeflectableProjectile
 
-var world_position := Vector2.ZERO
 var velocity := Vector2.ZERO
 var damage := 12.0
-var hit_radius := 14.0
-var player
+var player: PlayerHero
 var lifetime := 6.0
+
+func _init() -> void:
+	hit_radius = 14.0
 
 func _ready() -> void:
 	add_to_group("enemy_projectile")
 	position = IsoMath.world_to_screen(world_position)
 	queue_redraw()
 
-func setup(player_target, origin: Vector2, direction: Vector2, projectile_damage: float) -> void:
+func setup(player_target: PlayerHero, origin: Vector2, direction: Vector2, projectile_damage: float) -> void:
 	player = player_target
 	world_position = origin
 	velocity = direction.normalized() * 280.0
@@ -29,10 +30,8 @@ func _process(delta: float) -> void:
 	if player != null and world_position.distance_to(player.world_position) <= hit_radius + player.radius:
 		player.take_damage(damage)
 		queue_free()
+		return
 	queue_redraw()
-
-func destroy_by_sword() -> void:
-	queue_free()
 
 func _draw() -> void:
 	var direction := IsoMath.world_to_screen(velocity.normalized()).normalized()

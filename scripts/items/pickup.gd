@@ -1,15 +1,18 @@
 class_name GamePickup
 extends Node2D
 
-var pickup_kind := "experience"
+var pickup_kind: StringName = GameIds.PICKUP_EXPERIENCE
+## Позиция предмета в мировых координатах до изометрического преобразования.
 var world_position := Vector2.ZERO
+## Количество опыта или здоровья в зависимости от pickup_kind.
 var value := 20
-var player
+var player: PlayerHero
+## Используется магнитом опыта; бутылки постепенно гасят случайный импульс.
 var velocity := Vector2.ZERO
 var age := 0.0
 var hit_radius := 10.0
 
-func setup(player_target, kind: String, spawn_position: Vector2, amount: int) -> void:
+func setup(player_target: PlayerHero, kind: StringName, spawn_position: Vector2, amount: int) -> void:
 	player = player_target
 	pickup_kind = kind
 	world_position = spawn_position
@@ -25,24 +28,28 @@ func _process(delta: float) -> void:
 		return
 	age += delta
 	var distance := world_position.distance_to(player.world_position)
-	if pickup_kind == "experience" and distance < player.attack.sword_length + 42.0 and distance > 0.001:
-		var desired_velocity: Vector2 = (player.world_position - world_position).normalized() * (220.0 + maxf(0.0, 150.0 - distance) * 2.0)
-		velocity = velocity.lerp(desired_velocity, 1.0 - exp(-9.0 * delta))
+	# Только опыт магнитится; бутылка остаётся на месте до касания героем.
+	if pickup_kind == GameIds.PICKUP_EXPERIENCE and distance < player.experience_magnet_range() and distance > 0.001:
+		var desired_velocity := (player.world_position - world_position).normalized() * player.experience_magnet_speed(distance)
+		velocity = velocity.lerp(desired_velocity, player.experience_magnet_lerp_weight(delta))
 	else:
 		velocity *= exp(-6.0 * delta)
 	world_position += velocity * delta
 	position = IsoMath.world_to_screen(world_position)
-	if distance <= player.radius + hit_radius:
-		if pickup_kind == "experience":
+	# После движения дистанция считается заново, чтобы быстрый предмет подобрался в этот же кадр.
+	var updated_distance := world_position.distance_to(player.world_position)
+	if updated_distance <= player.radius + hit_radius:
+		if pickup_kind == GameIds.PICKUP_EXPERIENCE:
 			player.add_experience(value)
 		else:
 			player.heal(float(value))
 		queue_free()
+		return
 	queue_redraw()
 
 func _draw() -> void:
 	var bob := sin(age * 4.8) * 4.0
-	if pickup_kind == "experience":
+	if pickup_kind == GameIds.PICKUP_EXPERIENCE:
 		var diamond := PackedVector2Array([Vector2(0.0, -10.0 + bob), Vector2(9.0, bob), Vector2(0.0, 10.0 + bob), Vector2(-9.0, bob)])
 		draw_colored_polygon(diamond, Color("d0ad64"))
 		draw_polyline(PackedVector2Array([diamond[0], diamond[1], diamond[2], diamond[3], diamond[0]]), Color("d4c4a4"), 1.5)

@@ -6,23 +6,35 @@ signal attack_started
 const SWEEP_START := -1.22
 const SWEEP_END := 1.04
 
+## Урон одного замаха мечом.
 @export var damage := 34.0
+## Дистанция от центра героя до наконечника клинка в экранной проекции.
 @export var sword_length := 91.0
+## Минимальная пауза между началами двух атак.
 @export var cooldown_duration := 0.36
+## Время полного движения клинка от одного края дуги до другого.
 @export var swing_duration := 0.28
 
+## Уровни 1–6 выбирают модель меча: от гладиуса до двуручного.
 var sword_tier := 1
 var cooldown := 0.0
 var swing_time := 0.0
+## Знак меняется после атаки, поэтому удары чередуются слева направо и обратно.
 var swing_direction := 1.0
 var next_swing_direction := 1.0
+## Направление фиксируется в начале замаха и не залипает за движением мыши.
 var swing_aim_direction := Vector2.RIGHT
 var previous_swing_offset := 0.0
-var hit_targets: Dictionary = {}
-var host
+## Не позволяет одной цели получить урон несколько раз за один замах.
+var hit_targets: Dictionary[int, bool] = {}
+var host: PlayerHero
+var world_state: WorldState
 
-func setup(player_host) -> void:
+func setup(player_host: PlayerHero) -> void:
 	host = player_host
+
+func set_world_state(state: WorldState) -> void:
+	world_state = state
 
 func _process(delta: float) -> void:
 	cooldown = maxf(0.0, cooldown - delta)
@@ -35,7 +47,7 @@ func _process(delta: float) -> void:
 			host.queue_redraw()
 
 func try_attack() -> void:
-	if host == null or cooldown > 0.0 or not host.is_alive:
+	if host == null or world_state == null or cooldown > 0.0 or not host.is_alive:
 		return
 	cooldown = cooldown_duration
 	swing_time = swing_duration
@@ -49,32 +61,51 @@ func try_attack() -> void:
 	host.queue_redraw()
 
 func _hit_groups_between(from_offset: float, to_offset: float) -> void:
-	_hit_group_between(&"enemy", &"take_damage", from_offset, to_offset)
-	_hit_group_between(&"enemy_projectile", &"destroy_by_sword", from_offset, to_offset)
-	_hit_group_between(&"destructible", &"hit_by_sword", from_offset, to_offset)
+	# Проверяется пройденный за кадр участок дуги, а не только текущая позиция меча.
+	_hit_enemies_between(from_offset, to_offset)
+	_hit_projectiles_between(from_offset, to_offset)
+	_hit_destructibles_between(from_offset, to_offset)
 
-func _hit_group_between(group_name: StringName, method_name: StringName, from_offset: float, to_offset: float) -> void:
-	for target in get_tree().get_nodes_in_group(group_name):
-		if not is_instance_valid(target) or not target.has_method(method_name):
+func _hit_enemies_between(from_offset: float, to_offset: float) -> void:
+	for enemy in world_state.enemies:
+		if not is_instance_valid(enemy) or not enemy.is_alive:
 			continue
-		var target_id := target.get_instance_id()
+		var target_id := enemy.get_instance_id()
 		if hit_targets.has(target_id):
 			continue
-		var target_radius: float = target.get("hit_radius") if target.get("hit_radius") != null else 8.0
-		if group_name == &"enemy_projectile":
-			target_radius += 7.0
-		var target_position: Vector2 = target.get("world_position")
+		if point_in_blade_sweep(enemy.world_position, enemy.hit_radius, from_offset, to_offset):
+			hit_targets[target_id] = true
+			enemy.take_damage(damage, swing_aim_direction)
+
+func _hit_projectiles_between(from_offset: float, to_offset: float) -> void:
+	for projectile in world_state.enemy_projectiles:
+		if not is_instance_valid(projectile):
+			continue
+		var target_id := projectile.get_instance_id()
+		if hit_targets.has(target_id):
+			continue
+		var target_position: Vector2 = projectile.world_position
+		var target_radius: float = projectile.hit_radius + 7.0
 		if point_in_blade_sweep(target_position, target_radius, from_offset, to_offset):
 			hit_targets[target_id] = true
-			if method_name == &"take_damage":
-				target.call(method_name, damage, swing_aim_direction)
-			else:
-				target.call(method_name)
+			projectile.destroy_by_sword()
+
+func _hit_destructibles_between(from_offset: float, to_offset: float) -> void:
+	for prop in world_state.destructibles:
+		if not is_instance_valid(prop):
+			continue
+		var target_id := prop.get_instance_id()
+		if hit_targets.has(target_id):
+			continue
+		if point_in_blade_sweep(prop.world_position, prop.hit_radius, from_offset, to_offset):
+			hit_targets[target_id] = true
+			prop.hit_by_sword()
 
 func point_in_sweep(target_world_position: Vector2, target_radius: float = 0.0) -> bool:
 	return point_in_blade_sweep(target_world_position, target_radius, SWEEP_START, SWEEP_END)
 
 func point_in_blade_sweep(target_world_position: Vector2, target_radius: float, from_offset: float, to_offset: float) -> bool:
+	# Коллизия считается в экранной проекции, чтобы совпадать с нарисованной моделью клинка.
 	var relative_screen := IsoMath.world_to_screen(target_world_position - host.world_position)
 	var screen_distance := relative_screen.length()
 	var blade_half_width := 5.0 + float(sword_tier) * 0.8
@@ -108,9 +139,12 @@ func swing_end_offset() -> float:
 	return SWEEP_END if swing_direction > 0.0 else SWEEP_START
 
 func upgrade_sword() -> void:
+	# Шестой уровень — финальный двуручный меч с разовым дополнительным бонусом.
+	if sword_tier >= 6:
+		return
+	sword_tier += 1
 	sword_length += 11.0
 	damage += 2.0
-	sword_tier = mini(6, sword_tier + 1)
 	if sword_tier == 6:
 		sword_length += 8.0
 		damage += 2.0

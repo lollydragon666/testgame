@@ -5,11 +5,13 @@ const PUNCH_DURATION := 0.42
 
 var attack_cooldown := 0.65
 var punch_time := 0.0
+## Знак выбирает левую или правую руку для следующей анимации.
 var punch_side := 1.0
+## Урон откладывается до середины движения кулака.
 var punch_pending := false
 
 func _init() -> void:
-	enemy_kind = "brawler"
+	enemy_kind = GameIds.ENEMY_BRAWLER
 	hit_radius = 23.0
 	max_health = 64.0
 	move_speed = 76.0
@@ -59,4 +61,3 @@ func _draw() -> void:
 	draw_circle(left_hand, 8.0, Color("a39d91"))
 	draw_circle(right_hand, 8.0, Color("a39d91"))
 	draw_health_bar(50.0)
-

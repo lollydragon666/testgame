@@ -5,25 +5,36 @@ signal died
 signal health_changed(current: float, maximum: float)
 signal experience_changed(current: int, required: int, level: int)
 signal level_up_requested(level: int)
-signal magic_cast_requested(spell_kind: String, origin: Vector2, direction: Vector2, damage: float, spell_level: int)
-signal magic_changed(spell_kind: String, spell_level: int)
+signal magic_cast_requested(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float, spell_level: int)
+signal magic_changed(spell_kind: StringName, spell_level: int)
 
-@export var world_limit := 3600.0
-
+## Логическая позиция героя; Node2D.position содержит её изометрическую проекцию.
 var world_position := Vector2.ZERO
+## Нормализованное направление взгляда и атак в мировых координатах.
 var aim_direction := Vector2.RIGHT
+## Радиус тела; увеличение живучести одновременно увеличивает модель героя.
 var radius := 22.0
 var max_health := 100.0
 var health := 100.0
 var level := 1
 var experience := 0
 var experience_required := 100
+## Оставшееся время неуязвимости после получения урона.
 var invulnerability := 0.0
 var is_alive := true
 
+# Движение, ближняя атака и магия разделены на самостоятельные компоненты.
 var movement: PlayerMovement
 var attack: PlayerAttack
 var magic: PlayerMagic
+var world_config: WorldConfig
+
+var world_limit: float:
+	get:
+		return world_config.world_limit if world_config != null else 0.0
+
+func configure_world(config: WorldConfig) -> void:
+	world_config = config
 
 func _ready() -> void:
 	movement = PlayerMovement.new()
@@ -48,12 +59,19 @@ func _ready() -> void:
 	position = IsoMath.world_to_screen(world_position)
 	queue_redraw()
 
+func set_combat_registry(state: WorldState) -> void:
+	attack.set_world_state(state)
+
+func set_gameplay_active(active: bool) -> void:
+	process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
+
 func _process(delta: float) -> void:
-	if not is_alive:
+	if not is_alive or world_config == null:
 		return
 	invulnerability = maxf(0.0, invulnerability - delta)
 	_update_aim()
 	world_position = movement.step(delta, world_position, world_limit)
+	# Камера следует за героем, поэтому сам герой остаётся около центра экрана.
 	position = IsoMath.world_to_screen(world_position)
 	if Input.is_action_just_pressed("attack"):
 		attack.try_attack()
@@ -61,15 +79,26 @@ func _process(delta: float) -> void:
 		magic.try_cast()
 	queue_redraw()
 
-func _relay_magic_cast(spell_kind: String, origin: Vector2, direction: Vector2, damage: float, spell_level: int) -> void:
+func experience_magnet_range() -> float:
+	return attack.sword_length + world_config.pickup_magnet_extra_range
+
+func experience_magnet_speed(distance: float) -> float:
+	return world_config.pickup_magnet_base_speed + maxf(
+		0.0,
+		world_config.pickup_magnet_close_distance - distance
+	) * world_config.pickup_magnet_close_acceleration
+
+func experience_magnet_lerp_weight(delta: float) -> float:
+	return 1.0 - exp(-world_config.pickup_magnet_smoothing * delta)
+
+func _relay_magic_cast(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float, spell_level: int) -> void:
 	magic_cast_requested.emit(spell_kind, origin, direction, damage, spell_level)
 
-func _relay_magic_changed(spell_kind: String, spell_level: int) -> void:
+func _relay_magic_changed(spell_kind: StringName, spell_level: int) -> void:
 	magic_changed.emit(spell_kind, spell_level)
 
 func _update_aim() -> void:
-	var viewport_center := get_viewport_rect().size * 0.5
-	var mouse_delta := get_viewport().get_mouse_position() - viewport_center
+	var mouse_delta := get_global_mouse_position() - global_position
 	if mouse_delta.length_squared() > 16.0:
 		aim_direction = IsoMath.world_direction_from_screen(mouse_delta)
 

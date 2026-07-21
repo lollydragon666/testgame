@@ -1,8 +1,16 @@
 class_name GameUI
 extends CanvasLayer
 
+enum CombatDisplayState {
+	WAVES,
+	BOSS,
+}
+
 signal start_requested
-signal upgrade_selected(kind: String)
+signal upgrade_selected(kind: StringName)
+
+## Небольшая блокировка предотвращает случайный выбор кнопкой, открывшей окно уровня.
+const UPGRADE_INPUT_DELAY := 0.20
 
 var menu: ColorRect
 var hud: Control
@@ -16,6 +24,12 @@ var wave_label: Label
 var level_label: Label
 var magic_label: Label
 var game_over_title: Label
+var upgrade_buttons: Array[Button] = []
+var upgrade_delay_timer: Timer
+## Пока true, кнопки улучшений игнорируют ввод.
+var upgrade_selection_locked := true
+## Босс отображается отдельным состоянием, а не как восьмая обычная волна.
+var combat_display_state := CombatDisplayState.WAVES
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -72,10 +86,17 @@ func _build_hud() -> void:
 	hud = Control.new()
 	_full_rect(hud)
 	add_child(hud)
+	var top_left := MarginContainer.new()
+	top_left.name = "TopLeftContainer"
+	top_left.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	top_left.offset_left = 28.0
+	top_left.offset_top = 24.0
+	top_left.offset_right = 358.0
+	top_left.offset_bottom = 154.0
+	hud.add_child(top_left)
 	var left_box := VBoxContainer.new()
-	left_box.position = Vector2(28.0, 24.0)
-	left_box.size = Vector2(330.0, 125.0)
-	hud.add_child(left_box)
+	left_box.custom_minimum_size = Vector2(330.0, 125.0)
+	top_left.add_child(left_box)
 	health_label = Label.new()
 	left_box.add_child(health_label)
 	health_bar = ProgressBar.new()
@@ -88,21 +109,45 @@ func _build_hud() -> void:
 	xp_bar.show_percentage = false
 	xp_bar.custom_minimum_size = Vector2(330.0, 14.0)
 	left_box.add_child(xp_bar)
-	wave_label = Label.new()
-	wave_label.position = Vector2(28.0, 665.0)
-	wave_label.add_theme_font_size_override("font_size", 22)
-	hud.add_child(wave_label)
+
+	var top_right := MarginContainer.new()
+	top_right.name = "TopRightContainer"
+	top_right.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	top_right.offset_left = -280.0
+	top_right.offset_top = 24.0
+	top_right.offset_right = -28.0
+	top_right.offset_bottom = 62.0
+	hud.add_child(top_right)
 	level_label = Label.new()
-	level_label.position = Vector2(1110.0, 24.0)
+	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	level_label.add_theme_font_size_override("font_size", 20)
-	hud.add_child(level_label)
+	top_right.add_child(level_label)
+
+	var bottom_left := MarginContainer.new()
+	bottom_left.name = "BottomLeftContainer"
+	bottom_left.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	bottom_left.offset_left = 28.0
+	bottom_left.offset_top = -55.0
+	bottom_left.offset_right = 280.0
+	bottom_left.offset_bottom = -24.0
+	hud.add_child(bottom_left)
+	wave_label = Label.new()
+	wave_label.add_theme_font_size_override("font_size", 22)
+	bottom_left.add_child(wave_label)
+
+	var bottom_right := MarginContainer.new()
+	bottom_right.name = "BottomRightContainer"
+	bottom_right.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	bottom_right.offset_left = -440.0
+	bottom_right.offset_top = -55.0
+	bottom_right.offset_right = -28.0
+	bottom_right.offset_bottom = -24.0
+	hud.add_child(bottom_right)
 	magic_label = Label.new()
-	magic_label.position = Vector2(900.0, 665.0)
-	magic_label.size = Vector2(350.0, 30.0)
 	magic_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	magic_label.add_theme_font_size_override("font_size", 18)
 	magic_label.add_theme_color_override("font_color", Color("7fa9d8"))
-	hud.add_child(magic_label)
+	bottom_right.add_child(magic_label)
 
 func _build_upgrade_panel() -> void:
 	upgrade_panel = ColorRect.new()
@@ -121,18 +166,41 @@ func _build_upgrade_panel() -> void:
 	title.add_theme_font_size_override("font_size", 34)
 	title.add_theme_color_override("font_color", Color("d0ad64"))
 	box.add_child(title)
-	for option in [["sword", "МЕЧ — длина, модель и урон"], ["speed", "ДВИЖЕНИЕ — скорость героя"], ["vitality", "ЖИВУЧЕСТЬ — здоровье и размер"]]:
+	for option in [[GameIds.UPGRADE_SWORD, "МЕЧ — длина, модель и урон"], [GameIds.UPGRADE_SPEED, "ДВИЖЕНИЕ — скорость героя"], [GameIds.UPGRADE_VITALITY, "ЖИВУЧЕСТЬ — здоровье и размер"]]:
 		var choice := _button(String(option[1]))
-		choice.pressed.connect(_emit_upgrade.bind(String(option[0])))
+		choice.pressed.connect(_emit_upgrade.bind(StringName(option[0])))
 		box.add_child(choice)
+		upgrade_buttons.append(choice)
 
-	for option in [["lightning", "МОЛНИЯ — быстрый синий разряд"], ["fireball", "ФАЕРБОЛ — красный взрывной шар"]]:
+	for option in [[GameIds.SPELL_LIGHTNING, "МОЛНИЯ — быстрый синий разряд"], [GameIds.SPELL_FIREBALL, "ФАЕРБОЛ — красный взрывной шар"]]:
 		var choice := _button(String(option[1]))
-		choice.pressed.connect(_emit_upgrade.bind(String(option[0])))
+		choice.pressed.connect(_emit_upgrade.bind(StringName(option[0])))
 		box.add_child(choice)
+		upgrade_buttons.append(choice)
 
-func _emit_upgrade(kind: String) -> void:
+	upgrade_delay_timer = Timer.new()
+	upgrade_delay_timer.name = "UpgradeInputDelay"
+	upgrade_delay_timer.one_shot = true
+	upgrade_delay_timer.wait_time = UPGRADE_INPUT_DELAY
+	upgrade_delay_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	upgrade_delay_timer.timeout.connect(_unlock_upgrade_buttons)
+	upgrade_panel.add_child(upgrade_delay_timer)
+
+func _emit_upgrade(kind: StringName) -> void:
+	if upgrade_selection_locked:
+		return
+	upgrade_selection_locked = true
+	_set_upgrade_buttons_disabled(true)
 	upgrade_selected.emit(kind)
+
+func _set_upgrade_buttons_disabled(disabled: bool) -> void:
+	for button in upgrade_buttons:
+		button.disabled = disabled
+
+func _unlock_upgrade_buttons() -> void:
+	if upgrade_panel.visible:
+		upgrade_selection_locked = false
+		_set_upgrade_buttons_disabled(false)
 
 func _build_game_over_panel() -> void:
 	game_over_panel = ColorRect.new()
@@ -161,29 +229,42 @@ func _button(text_value: String) -> Button:
 	return button
 
 func show_menu() -> void:
+	upgrade_delay_timer.stop()
+	upgrade_selection_locked = true
 	menu.visible = true
 	hud.visible = false
 	upgrade_panel.visible = false
 	game_over_panel.visible = false
 
 func show_game() -> void:
+	upgrade_delay_timer.stop()
+	upgrade_selection_locked = true
 	menu.visible = false
 	hud.visible = true
 	upgrade_panel.visible = false
 	game_over_panel.visible = false
 
 func show_upgrade() -> void:
+	upgrade_selection_locked = true
+	_set_upgrade_buttons_disabled(true)
+	upgrade_delay_timer.start()
 	upgrade_panel.visible = true
 	hud.visible = false
 
 func hide_upgrade() -> void:
+	upgrade_delay_timer.stop()
+	upgrade_selection_locked = true
 	upgrade_panel.visible = false
 	hud.visible = true
 
 func show_game_over(victory: bool = false) -> void:
+	upgrade_delay_timer.stop()
+	upgrade_selection_locked = true
 	game_over_title.text = "БЕЗДНА ПОВЕРЖЕНА" if victory else "ГЕРОЙ ПАЛ"
-	game_over_panel.visible = true
+	menu.visible = false
 	hud.visible = false
+	upgrade_panel.visible = false
+	game_over_panel.visible = true
 
 func set_health(current: float, maximum: float) -> void:
 	health_bar.max_value = maximum
@@ -197,13 +278,22 @@ func set_experience(current: int, required: int, level: int) -> void:
 	level_label.text = "УРОВЕНЬ %d" % level
 
 func set_wave(value: int) -> void:
+	combat_display_state = CombatDisplayState.WAVES
+	wave_label.add_theme_color_override("font_color", Color("d4c4a4"))
 	wave_label.text = "ВОЛНА %d / 7" % value
 
-func set_magic(spell_kind: String, spell_level: int) -> void:
+func set_boss_state() -> void:
+	combat_display_state = CombatDisplayState.BOSS
+	wave_label.add_theme_color_override("font_color", Color("af3029"))
+	wave_label.text = "БОСС"
+
+func set_magic(spell_kind: StringName, spell_level: int) -> void:
 	match spell_kind:
-		"lightning":
+		GameIds.SPELL_LIGHTNING:
 			magic_label.text = "МАГИЯ: МОЛНИЯ · УР. %d · ПКМ" % spell_level
-		"fireball":
+		GameIds.SPELL_FIREBALL:
 			magic_label.text = "МАГИЯ: ФАЕРБОЛ · УР. %d · ПКМ" % spell_level
-		_:
+		&"":
 			magic_label.text = "МАГИЯ: НЕ ВЫБРАНА · ПКМ"
+		_:
+			push_error("Unknown UI spell: %s" % spell_kind)

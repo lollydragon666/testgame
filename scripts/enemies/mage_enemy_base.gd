@@ -1,14 +1,18 @@
 class_name MageEnemyBase
 extends EnemyBase
 
-var spell_kind := "lightning"
+var spell_kind: StringName = GameIds.SPELL_LIGHTNING
 var magic_color := Color("397fe8")
 var cast_cooldown := 1.4
+## Полная пауза между двумя заклинаниями конкретного вида мага.
 var cast_interval := 2.6
 var spell_damage := 14.0
+## Маг отступает ближе минимума и приближается дальше максимума.
 var preferred_min_distance := 330.0
 var preferred_max_distance := 500.0
+## Предельная дистанция, с которой разрешено выпустить заклинание.
 var cast_range := 680.0
+## Случайный знак заставляет разных магов обходить героя с разных сторон.
 var strafe_sign := 1.0
 var cast_flash := 0.0
 
@@ -49,11 +53,10 @@ func _draw() -> void:
 	var orb_position := direction * 29.0 - side * 19.0
 	var orb_radius := 7.0 + (3.0 if cast_flash > 0.0 else 0.0)
 	draw_circle(orb_position, orb_radius, magic_color)
-	if spell_kind == "lightning":
+	if spell_kind == GameIds.SPELL_LIGHTNING:
 		draw_line(Vector2(-7.0, -5.0), Vector2(1.0, 1.0), magic_color, 3.0)
 		draw_line(Vector2(1.0, 1.0), Vector2(-3.0, 8.0), magic_color, 3.0)
 	else:
 		draw_circle(Vector2.ZERO, 8.0, magic_color)
 		draw_circle(Vector2(2.0, -2.0), 3.0, Color("ffb54c"))
 	draw_health_bar(54.0)
-
