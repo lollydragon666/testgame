@@ -12,68 +12,258 @@ env:
   GODOT_VERSION: "4.7.1"
   GODOT_RELEASE: "4.7.1-stable"
 
+concurrency:
+  group: godot-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-and-export:
     name: Headless tests and Web artifact
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Godot and Web templates
+      # Кэшируем скачанные архивы Godot и уже установленные export templates.
+      - name: Cache Godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/godot-ci
+            ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          key: godot-${{ runner.os }}-${{ env.GODOT_RELEASE }}-web-v1
+
+      # Сначала устанавливаем только редактор Godot.
+      # Для импорта проекта и запуска тестов Web templates не нужны.
+      - name: Install Godot editor
         shell: bash
         run: |
-          set -euo pipefail
-          release_url="https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}"
-          curl --fail --location --retry 3 \
-            --output "${RUNNER_TEMP}/godot.zip" \
-            "${release_url}/Godot_v${GODOT_RELEASE}_linux.x86_64.zip"
-          unzip -q "${RUNNER_TEMP}/godot.zip" -d "${RUNNER_TEMP}/godot"
-          sudo install -m 0755 \
-            "${RUNNER_TEMP}/godot/Godot_v${GODOT_RELEASE}_linux.x86_64" \
-            /usr/local/bin/godot
+          set -Eeuo pipefail
 
-          curl --fail --location --retry 3 \
-            --output "${RUNNER_TEMP}/templates.tpz" \
-            "${release_url}/Godot_v${GODOT_RELEASE}_export_templates.tpz"
-          unzip -q "${RUNNER_TEMP}/templates.tpz" -d "${RUNNER_TEMP}/export-templates"
-          template_dir="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
-          mkdir -p "${template_dir}"
-          cp -R "${RUNNER_TEMP}/export-templates/templates/." "${template_dir}/"
+          base_url="https://github.com/godotengine/godot-builds/releases/download/${GODOT_RELEASE}"
+          cache_dir="${HOME}/.cache/godot-ci/${GODOT_RELEASE}"
+
+          editor_file="Godot_v${GODOT_RELEASE}_linux.x86_64.zip"
+          editor_archive="${cache_dir}/${editor_file}"
+          editor_extract_dir="${RUNNER_TEMP}/godot-editor"
+
+          mkdir -p "${cache_dir}"
+
+          if [[ ! -s "${editor_archive}" ]]; then
+            echo "Downloading Godot editor: ${editor_file}"
+
+            curl \
+              --fail \
+              --show-error \
+              --location \
+              --retry 5 \
+              --retry-delay 3 \
+              --retry-all-errors \
+              --output "${editor_archive}" \
+              "${base_url}/${editor_file}"
+          else
+            echo "Using cached Godot editor archive"
+          fi
+
+          echo "Checking Godot archive"
+          unzip -tq "${editor_archive}"
+
+          rm -rf "${editor_extract_dir}"
+          mkdir -p "${editor_extract_dir}"
+
+          unzip -q "${editor_archive}" -d "${editor_extract_dir}"
+
+          editor_binary="$(
+            find "${editor_extract_dir}" \
+              -maxdepth 1 \
+              -type f \
+              -name 'Godot_v*_linux.x86_64' \
+              -print \
+              -quit
+          )"
+
+          if [[ -z "${editor_binary}" ]]; then
+            echo "::error::Godot binary was not found after extraction"
+            find "${editor_extract_dir}" -maxdepth 2 -type f -print
+            exit 1
+          fi
+
+          chmod +x "${editor_binary}"
+          sudo install -m 0755 "${editor_binary}" /usr/local/bin/godot
+
+          echo "Installed Godot:"
           godot --version
 
+      # Этот шаг проверяет, что project.godot и GDScript вообще загружаются.
       - name: Import project and compile scripts
-        run: godot --headless --editor --path . --quit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          godot \
+            --headless \
+            --editor \
+            --path "${GITHUB_WORKSPACE}" \
+            --quit
 
       - name: Validate resources and referenced files
-        run: godot --headless --path . --script res://tests/test_resource_validation.gd
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          godot \
+            --headless \
+            --path "${GITHUB_WORKSPACE}" \
+            --script res://tests/test_resource_validation.gd
 
       - name: Run headless test suite
         shell: bash
         run: |
-          set -euo pipefail
-          for test_file in tests/test_*.gd; do
+          set -Eeuo pipefail
+
+          shopt -s nullglob
+
+          test_files=(tests/test_*.gd)
+
+          if [[ ${#test_files[@]} -eq 0 ]]; then
+            echo "::error::No test files were found"
+            exit 1
+          fi
+
+          for test_file in "${test_files[@]}"; do
             case "${test_file}" in
-              tests/test_resource_validation.gd|tests/test_smoke.gd) continue ;;
+              tests/test_resource_validation.gd|tests/test_smoke.gd)
+                continue
+                ;;
             esac
-            echo "Running ${test_file}"
-            godot --headless --path . --script "res://${test_file}"
+
+            echo "::group::Running ${test_file}"
+
+            godot \
+              --headless \
+              --path "${GITHUB_WORKSPACE}" \
+              --script "res://${test_file}"
+
+            echo "::endgroup::"
           done
 
       - name: Smoke test main scene
-        run: godot --headless --path . --script res://tests/test_smoke.gd
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          godot \
+            --headless \
+            --path "${GITHUB_WORKSPACE}" \
+            --script res://tests/test_smoke.gd
+
+      # Шаблоны нужны только для экспорта, поэтому ставим их после тестов.
+      - name: Install Web export templates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          base_url="https://github.com/godotengine/godot-builds/releases/download/${GODOT_RELEASE}"
+          cache_dir="${HOME}/.cache/godot-ci/${GODOT_RELEASE}"
+
+          templates_file="Godot_v${GODOT_RELEASE}_export_templates.tpz"
+          templates_archive="${cache_dir}/${templates_file}"
+
+          template_dir="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          template_extract_dir="${RUNNER_TEMP}/godot-export-templates"
+
+          mkdir -p "${cache_dir}"
+
+          # Если Web-шаблон уже восстановлен из cache, повторная установка не нужна.
+          if [[ -s "${template_dir}/web_release.zip" ]]; then
+            echo "Web export templates already installed"
+            exit 0
+          fi
+
+          if [[ ! -s "${templates_archive}" ]]; then
+            echo "Downloading export templates: ${templates_file}"
+
+            curl \
+              --fail \
+              --show-error \
+              --location \
+              --retry 5 \
+              --retry-delay 3 \
+              --retry-all-errors \
+              --output "${templates_archive}" \
+              "${base_url}/${templates_file}"
+          else
+            echo "Using cached export templates archive"
+          fi
+
+          echo "Checking export templates archive"
+          unzip -tq "${templates_archive}"
+
+          rm -rf "${template_extract_dir}"
+          mkdir -p "${template_extract_dir}"
+
+          unzip -q "${templates_archive}" -d "${template_extract_dir}"
+
+          if [[ ! -d "${template_extract_dir}/templates" ]]; then
+            echo "::error::The templates directory was not found in the TPZ archive"
+            find "${template_extract_dir}" -maxdepth 3 -print
+            exit 1
+          fi
+
+          rm -rf "${template_dir}"
+          mkdir -p "${template_dir}"
+
+          cp -a \
+            "${template_extract_dir}/templates/." \
+            "${template_dir}/"
+
+          if [[ ! -s "${template_dir}/web_release.zip" ]]; then
+            echo "::error::web_release.zip was not installed"
+            find "${template_dir}" -maxdepth 2 -type f -print
+            exit 1
+          fi
+
+          echo "Installed Web export templates:"
+          find "${template_dir}" -maxdepth 1 -type f -printf '%f\n' | sort
 
       - name: Export Web build
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
+
+          rm -rf builds/web
           mkdir -p builds/web
-          godot --headless --path . --export-release Web builds/web/index.html
+
+          godot \
+            --headless \
+            --path "${GITHUB_WORKSPACE}" \
+            --export-release "Web" \
+            "${GITHUB_WORKSPACE}/builds/web/index.html"
+
           test -s builds/web/index.html
-          test -n "$(find builds/web -maxdepth 1 -type f -name '*.wasm' -print -quit)"
-          test -n "$(find builds/web -maxdepth 1 -type f -name '*.pck' -print -quit)"
+
+          test -n "$(
+            find builds/web \
+              -maxdepth 1 \
+              -type f \
+              -name '*.wasm' \
+              -print \
+              -quit
+          )"
+
+          test -n "$(
+            find builds/web \
+              -maxdepth 1 \
+              -type f \
+              -name '*.pck' \
+              -print \
+              -quit
+          )"
+
+          echo "Web build files:"
+          find builds/web -maxdepth 1 -type f -printf '%f — %s bytes\n' | sort
 
       - name: Upload Web artifact
         uses: actions/upload-artifact@v4
@@ -82,4 +272,3 @@ jobs:
           path: builds/web/
           if-no-files-found: error
           retention-days: 14
-
