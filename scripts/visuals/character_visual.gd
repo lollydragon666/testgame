@@ -44,7 +44,7 @@ func _build_visual_tree() -> void:
 	weapon_socket = Node2D.new()
 	weapon_socket.name = "WeaponSocket"
 	mirrored_visual_root.add_child(weapon_socket)
-	weapon_visual = _make_part("WeaponVisual", PART_WEAPON, weapon_socket)
+	weapon_visual = _make_weapon_part(weapon_socket)
 	effects = _make_part("Effects", PART_EFFECTS, self)
 
 func _make_part(node_name: String, id: StringName, parent: Node) -> CharacterVisualPart:
@@ -53,6 +53,9 @@ func _make_part(node_name: String, id: StringName, parent: Node) -> CharacterVis
 	part.setup(self, id)
 	parent.add_child(part)
 	return part
+
+func _make_weapon_part(parent: Node) -> CharacterVisualPart:
+	return _make_part("WeaponVisual", PART_WEAPON, parent)
 
 func apply_visual_definition(definition: CharacterVisualDefinition) -> void:
 	visual_definition = definition
