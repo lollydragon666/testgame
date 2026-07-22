@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ShopDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/shop_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"jewelry"
+display_name = "Лавка бижутерии"
+stock_definition_ids = Array[StringName]([&"health_amulet", &"strength_amulet", &"defense_amulet", &"wind_amulet", &"hunter_amulet", &"hero_amulet", &"strength_ring", &"haste_ring", &"defense_ring", &"life_ring", &"hunter_ring", &"accuracy_ring", &"destruction_ring", &"royal_ring"])
+

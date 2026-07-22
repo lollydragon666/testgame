@@ -9,6 +9,7 @@ extends Resource
 @export var props: Array[PropDefinition] = []
 @export var locations: Array[LocationDefinition] = []
 @export var item_catalog: ItemCatalog
+@export var shops: Array[ShopDefinition] = []
 
 func enemy(id: StringName) -> EnemyDefinition:
 	for definition in enemies:
@@ -36,6 +37,12 @@ func item(id: StringName) -> ItemDefinition:
 
 func all_items() -> Array[ItemDefinition]:
 	return item_catalog.all_definitions() if item_catalog != null else []
+
+func shop(id: StringName) -> ShopDefinition:
+	for definition in shops:
+		if definition != null and definition.id == id:
+			return definition
+	return null
 
 func upgrade(id: StringName) -> UpgradeDefinition:
 	for definition in upgrades:

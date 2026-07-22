@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="GameContent" load_steps=33 format=3]
+[gd_resource type="Resource" script_class="GameContent" load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://scripts/content/game_content.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/content/enemies/brawler.tres" id="2"]
@@ -32,6 +32,9 @@
 [ext_resource type="Resource" path="res://resources/content/upgrades/magnet.tres" id="30"]
 [ext_resource type="Resource" path="res://resources/content/locations/test_location.tres" id="31"]
 [ext_resource type="Resource" path="res://resources/item_catalog.tres" id="32"]
+[ext_resource type="Resource" path="res://resources/content/shops/blacksmith.tres" id="33"]
+[ext_resource type="Resource" path="res://resources/content/shops/jewelry.tres" id="34"]
+[ext_resource type="Resource" path="res://resources/content/shops/alchemist.tres" id="35"]
 
 [resource]
 script = ExtResource("1")
@@ -43,3 +46,4 @@ waves = Array[WaveDefinition]([ExtResource("17"), ExtResource("18"), ExtResource
 props = Array[PropDefinition]([ExtResource("24"), ExtResource("25"), ExtResource("26")])
 locations = Array[LocationDefinition]([ExtResource("31")])
 item_catalog = ExtResource("32")
+shops = Array[ShopDefinition]([ExtResource("33"), ExtResource("34"), ExtResource("35")])

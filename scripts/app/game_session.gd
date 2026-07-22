@@ -14,6 +14,7 @@ const SAVE_PATH := "user://player_profile.json"
 
 var profile := PlayerProfile.new()
 var inventory := InventoryService.new()
+var shop_service := ShopService.new()
 var selected_location_id: StringName = &"test_location"
 var selected_location_tier := 1
 var current_run_seed := 0
@@ -30,6 +31,8 @@ func _configure_inventory() -> void:
 	inventory.load_serialized(profile.inventory_items, profile.equipped_items, profile.selected_weapon_definition_id)
 	inventory.inventory_changed.connect(_on_inventory_changed)
 	inventory.equipment_changed.connect(_on_inventory_changed)
+	shop_service = ShopService.new()
+	shop_service.configure(GAME_CONTENT, inventory, profile, save_profile)
 	_sync_inventory_profile()
 
 func _on_inventory_changed() -> void:
