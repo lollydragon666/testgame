@@ -166,6 +166,71 @@ func resolve_obstacle_motion(from_position: Vector2, to_position: Vector2, radiu
 		return slide_y
 	return from_position
 
+## Враги должны не только останавливаться перед круглым препятствием, но и обходить
+## его. Отдельный метод сохраняет строгую блокировку для рывка игрока.
+func resolve_enemy_motion(
+	enemy: EnemyBase,
+	from_position: Vector2,
+	to_position: Vector2,
+	radius: float
+) -> Vector2:
+	var safe_start := _push_out_of_obstacles(from_position, radius, enemy)
+	var requested_motion := to_position - from_position
+	if requested_motion.is_zero_approx():
+		return safe_start
+	var direct_target := safe_start + requested_motion
+	if not is_position_blocked(direct_target, radius):
+		return direct_target
+	var blocking_obstacle := _nearest_blocking_obstacle(direct_target, radius)
+	if blocking_obstacle == null:
+		return safe_start
+	var normal := safe_start - blocking_obstacle.world_position
+	if normal.is_zero_approx():
+		normal = requested_motion.normalized()
+	normal = normal.normalized()
+	var preferred_side := 1.0 if (enemy.get_instance_id() + blocking_obstacle.get_instance_id()) % 2 == 0 else -1.0
+	var step_length := requested_motion.length()
+	var tangential_motion := requested_motion.slide(normal)
+	for side: float in [preferred_side, -preferred_side]:
+		# Небольшая наружная составляющая не даёт хорде снова войти в круг объекта.
+		var detour: Vector2 = tangential_motion + normal.orthogonal() * side * step_length * 0.85
+		detour += normal * minf(1.5, step_length * 0.35)
+		var candidate: Vector2 = safe_start + detour.limit_length(step_length * 1.15)
+		if not is_position_blocked(candidate, radius):
+			return candidate
+	return safe_start
+
+func _push_out_of_obstacles(position_value: Vector2, radius: float, enemy: EnemyBase) -> Vector2:
+	var result := position_value
+	for _iteration in 8:
+		var moved := false
+		for obstacle in obstacles_near(result, radius + 96.0):
+			var offset := result - obstacle.world_position
+			var minimum_distance := radius + obstacle.collision_radius
+			var distance := offset.length()
+			if distance >= minimum_distance:
+				continue
+			if distance <= 0.001:
+				var angle_seed := float((enemy.get_instance_id() + obstacle.get_instance_id()) % 628) * 0.01
+				offset = Vector2.from_angle(angle_seed)
+			else:
+				offset /= distance
+			result = obstacle.world_position + offset * (minimum_distance + 0.5)
+			moved = true
+		if not moved:
+			break
+	return result
+
+func _nearest_blocking_obstacle(world_position: Vector2, radius: float) -> WorldProp:
+	var nearest: WorldProp = null
+	var nearest_distance := INF
+	for obstacle in obstacles_near(world_position, radius + 96.0):
+		var distance := world_position.distance_to(obstacle.world_position)
+		if distance < radius + obstacle.collision_radius and distance < nearest_distance:
+			nearest = obstacle
+			nearest_distance = distance
+	return nearest
+
 func is_position_blocked(world_position: Vector2, radius: float) -> bool:
 	for obstacle in obstacles_near(world_position, radius + 64.0):
 		if world_position.distance_to(obstacle.world_position) < radius + obstacle.collision_radius:

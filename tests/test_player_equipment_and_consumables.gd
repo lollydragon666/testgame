@@ -55,8 +55,10 @@ func _run() -> void:
 	_require(player.attack.definition == sabre_definition, "Equipped sword did not reach PlayerAttack")
 	_require(player.attack.damage == sabre_definition.base_damage, "Equipped sword damage was not refreshed")
 	_require(player.attack.definition.visual_style == &"sabre", "Sword visual style was not refreshed")
+	var base_attack_half_width := player.attack.attack_half_width
 	player.attack.upgrade_sword()
 	_require(player.attack.sword_tier == 2, "Run sword tier did not increase")
+	_require(is_equal_approx(player.attack.attack_half_width, base_attack_half_width * sabre_definition.width_multiplier_per_tier), "Sword growth did not expand the attack zone by 12%")
 	player.reset_run()
 	player.apply_equipped_weapon()
 	_require(player.attack.sword_tier == 1 and player.attack.definition == sabre_definition, "Run reset changed base weapon or retained sword tier")

@@ -8,6 +8,8 @@ extends ItemDefinition
 @export var base_attack_reach := 91.0
 @export var reach_per_tier := 11.0
 @export var attack_half_width := 7.0
+## Каждый уровень роста меча расширяет world-space зону замаха на 10–15%.
+@export_range(1.10, 1.15, 0.01) var width_multiplier_per_tier := 1.12
 @export var base_visual_length := 91.0
 @export var visual_length_per_tier := 11.0
 @export var cooldown := 0.36

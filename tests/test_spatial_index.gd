@@ -70,9 +70,26 @@ func _run() -> void:
 	state.register_world_prop(obstacle)
 	_require(state.is_position_blocked(Vector2(600.0, 0.0), 20.0), "Obstacle was not detected through the grid")
 	_require(state.resolve_obstacle_motion(Vector2(500.0, 0.0), Vector2(600.0, 0.0), 20.0) == Vector2(500.0, 0.0), "Obstacle did not reject blocked movement")
+	var escaped_position := state.resolve_enemy_motion(enemy_a, Vector2(600.0, 0.0), Vector2(601.0, 0.0), enemy_a.collision_radius)
+	_require(not state.is_position_blocked(escaped_position, enemy_a.collision_radius), "Enemy could not escape an overlapping obstacle")
 	_require(not state.is_enemy_spawn_clear(Vector2(600.0, 0.0), 24.0, player.world_position, player.collision_radius, 10.0), "Spawn check accepted an obstacle")
 	_require(not state.is_enemy_spawn_clear(enemy_a.world_position, 24.0, player.world_position, player.collision_radius, 10.0), "Spawn check accepted an occupied enemy position")
 	_require(state.is_enemy_spawn_clear(Vector2(1500.0, 1500.0), 24.0, player.world_position, player.collision_radius, 10.0), "Spawn check rejected a free position")
+
+	state.unregister_enemy(enemy_b)
+	state.unregister_enemy(enemy_far)
+	var path_obstacle := WorldProp.new()
+	path_obstacle.setup(prop_definition, Vector2(150.0, 0.0))
+	root.add_child(path_obstacle)
+	state.register_world_prop(path_obstacle)
+	player.world_position = Vector2.ZERO
+	enemy_a.world_position = Vector2(300.0, 0.0)
+	state.update_enemy(enemy_a)
+	var initial_player_distance := enemy_a.world_position.distance_to(player.world_position)
+	for _step in 240:
+		enemy_a._physics_process(1.0 / 60.0)
+		_require(not state.is_position_blocked(enemy_a.world_position, enemy_a.collision_radius), "Enemy entered an obstacle while navigating")
+	_require(enemy_a.world_position.distance_to(player.world_position) < initial_player_distance * 0.45, "Enemy remained stuck instead of navigating around an obstacle")
 
 	var limit_config := WorldConfig.new()
 	limit_config.max_enemy_projectiles = 2

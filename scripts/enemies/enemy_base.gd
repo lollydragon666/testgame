@@ -83,7 +83,7 @@ func _physics_process(delta: float) -> void:
 	tick_behavior(delta)
 	if world_state != null:
 		world_position += world_state.enemy_separation(self, world_config.enemy_separation_radius) * world_config.enemy_separation_speed * delta
-		world_position = world_state.resolve_obstacle_motion(previous_position, world_position, collision_radius)
+		world_position = world_state.resolve_enemy_motion(self, previous_position, world_position, collision_radius)
 	world_position = world_position.clamp(
 		Vector2.ONE * -world_config.world_limit,
 		Vector2.ONE * world_config.world_limit

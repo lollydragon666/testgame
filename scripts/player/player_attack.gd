@@ -149,11 +149,15 @@ func swing_end_offset() -> float:
 	return SWEEP_END if swing_direction > 0.0 else SWEEP_START
 
 func upgrade_sword() -> void:
-	# Шестой уровень — финальный двуручный меч с разовым дополнительным бонусом.
+	# Модель растёт вместе с зоной удара; ширина увеличивается на 12% за уровень.
 	if not can_upgrade_sword():
 		return
 	sword_tier += 1
 	attack_reach += definition.reach_per_tier
+	attack_half_width = definition.attack_half_width * pow(
+		definition.width_multiplier_per_tier,
+		float(sword_tier - 1)
+	)
 	visual_sword_length += definition.visual_length_per_tier
 	damage += definition.damage_per_tier
 	if sword_tier == definition.max_tier:

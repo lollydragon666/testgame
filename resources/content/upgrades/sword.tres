@@ -5,6 +5,5 @@
 [resource]
 script = ExtResource("1")
 id = &"sword"
-display_name = "МЕЧ — длина, модель и урон"
+display_name = "РОСТ МЕЧА — размер и зона удара"
 requires_sword_upgrade = true
-
