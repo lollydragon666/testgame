@@ -14,6 +14,9 @@ const DASH_COOLDOWN := 1.1
 const DASH_DURATION := 0.16
 const DASH_INVULNERABILITY := 0.18
 const DASH_COLLISION_STEP := 12.0
+## HUD достаточно обновлять 20 раз в секунду; это сохраняет плавный десятичный cooldown.
+const DASH_STATUS_UPDATE_INTERVAL := 0.05
+const VISUAL_DIRECTION_DOT_THRESHOLD := 0.9998
 
 ## Логическая позиция героя; Node2D.position содержит её изометрическую проекцию.
 var world_position := Vector2.ZERO
@@ -46,6 +49,9 @@ var dash_time_remaining := 0.0
 var dash_distance_remaining := 0.0
 var dash_direction := Vector2.RIGHT
 var is_dashing := false
+var _dash_status_emit_remaining := 0.0
+var _last_visual_aim_direction := Vector2.RIGHT
+var _last_invulnerability_blink := false
 
 # Компоненты объявлены в player.tscn, а поведенческий скрипт только связывает их.
 @onready var movement: PlayerMovement = $Movement
@@ -78,6 +84,7 @@ func _ready() -> void:
 	magic.magic_changed.connect(_relay_magic_changed)
 	hurtbox.set_collision_radius(collision_radius)
 	position = IsoMath.world_to_screen(world_position)
+	_last_visual_aim_direction = aim_direction
 	refresh_visual()
 
 func set_combat_registry(state: WorldState) -> void:
@@ -96,6 +103,9 @@ func _physics_process(delta: float) -> void:
 	dash_cooldown_remaining = maxf(0.0, dash_cooldown_remaining - delta)
 	input_state.sample(global_position, get_global_mouse_position())
 	aim_direction = input_state.aim_world
+	if _last_visual_aim_direction.dot(aim_direction) < VISUAL_DIRECTION_DOT_THRESHOLD:
+		_last_visual_aim_direction = aim_direction
+		refresh_visual()
 	if input_state.dash_pressed:
 		try_start_dash(input_state.movement_screen)
 	if is_dashing:
@@ -111,8 +121,13 @@ func _physics_process(delta: float) -> void:
 		attack.try_attack()
 	if not is_dashing and input_state.magic_pressed:
 		magic.try_cast()
-	dash_status_changed.emit(dash_cooldown_remaining, DASH_COOLDOWN, is_dashing)
-	refresh_visual()
+	_dash_status_emit_remaining = maxf(0.0, _dash_status_emit_remaining - delta)
+	if _dash_status_emit_remaining <= 0.0 and (is_dashing or dash_cooldown_remaining > 0.0):
+		_emit_dash_status()
+	var blink_visible := invulnerability > 0.0 and int(Time.get_ticks_msec() / 55) % 2 == 0
+	if blink_visible != _last_invulnerability_blink:
+		_last_invulnerability_blink = blink_visible
+		refresh_visual()
 
 func try_start_dash(movement_screen_input: Vector2 = Vector2.ZERO) -> bool:
 	if is_dashing or dash_cooldown_remaining > 0.0 or not is_alive or world_config == null:
@@ -129,7 +144,8 @@ func try_start_dash(movement_screen_input: Vector2 = Vector2.ZERO) -> bool:
 	is_dashing = true
 	invulnerability = maxf(invulnerability, DASH_INVULNERABILITY)
 	movement.velocity = Vector2.ZERO
-	dash_status_changed.emit(dash_cooldown_remaining, DASH_COOLDOWN, true)
+	_emit_dash_status()
+	refresh_visual()
 	return true
 
 func _step_dash(delta: float) -> void:
@@ -161,14 +177,22 @@ func _step_dash(delta: float) -> void:
 		_finish_dash()
 
 func _finish_dash() -> void:
+	var was_dashing := is_dashing
 	is_dashing = false
 	dash_time_remaining = 0.0
 	dash_distance_remaining = 0.0
 	movement.velocity = Vector2.ZERO
+	if was_dashing:
+		_emit_dash_status()
+		refresh_visual()
 
 func _cancel_dash() -> void:
 	_finish_dash()
-	dash_status_changed.emit(dash_cooldown_remaining, DASH_COOLDOWN, false)
+	_emit_dash_status()
+
+func _emit_dash_status() -> void:
+	_dash_status_emit_remaining = DASH_STATUS_UPDATE_INTERVAL
+	dash_status_changed.emit(dash_cooldown_remaining, DASH_COOLDOWN, is_dashing)
 
 func experience_magnet_range() -> float:
 	return attack.attack_reach + world_config.pickup_magnet_extra_range + magnet_range_bonus
@@ -195,6 +219,7 @@ func take_damage(amount: float) -> void:
 	health = maxf(0.0, health - reduced_amount)
 	invulnerability = 0.45
 	health_changed.emit(health, max_health)
+	refresh_visual()
 	if health <= 0.0:
 		is_alive = false
 		died.emit()
@@ -222,6 +247,7 @@ func upgrade_vitality() -> void:
 	collision_radius = minf(36.0, collision_radius + 2.5)
 	hurtbox.set_collision_radius(collision_radius)
 	health_changed.emit(health, max_health)
+	refresh_visual()
 
 func upgrade_power() -> void:
 	power_multiplier += 0.15
@@ -267,6 +293,9 @@ func reset_run() -> void:
 	dash_distance_remaining = 0.0
 	dash_direction = Vector2.RIGHT
 	is_dashing = false
+	_dash_status_emit_remaining = 0.0
+	_last_visual_aim_direction = Vector2.RIGHT
+	_last_invulnerability_blink = false
 	movement.speed = 195.0
 	movement.reset()
 	attack.reset()
@@ -275,7 +304,7 @@ func reset_run() -> void:
 	hurtbox.set_collision_radius(collision_radius)
 	health_changed.emit(health, max_health)
 	experience_changed.emit(experience, experience_required, level)
-	dash_status_changed.emit(0.0, DASH_COOLDOWN, false)
+	_emit_dash_status()
 	refresh_visual()
 
 func refresh_visual() -> void:

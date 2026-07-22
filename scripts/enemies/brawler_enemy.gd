@@ -36,3 +36,6 @@ func tick_behavior(delta: float) -> void:
 		punch_time = PUNCH_DURATION
 		punch_pending = true
 		punch_side *= -1.0
+
+func is_visual_animation_active() -> bool:
+	return punch_time > 0.0

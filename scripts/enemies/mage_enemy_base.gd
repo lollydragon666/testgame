@@ -40,3 +40,6 @@ func tick_behavior(delta: float) -> void:
 		cast_cooldown = cast_interval
 		cast_flash = 0.3
 		spell_requested.emit(spell_kind, world_position, direction, spell_damage)
+
+func is_visual_animation_active() -> bool:
+	return cast_flash > 0.0

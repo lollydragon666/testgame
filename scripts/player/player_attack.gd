@@ -151,6 +151,8 @@ func upgrade_sword() -> void:
 		attack_reach += definition.final_tier_bonus_reach
 		visual_sword_length += definition.final_tier_bonus_reach
 		damage += definition.final_tier_bonus_damage
+	if host != null:
+		host.refresh_visual()
 
 func can_upgrade_sword() -> bool:
 	return definition != null and sword_tier < definition.max_tier

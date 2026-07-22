@@ -39,3 +39,6 @@ func tick_behavior(delta: float) -> void:
 		attack_cooldown = 2.05
 		thrust_time = THRUST_DURATION
 		hit_pending = true
+
+func is_visual_animation_active() -> bool:
+	return thrust_time > 0.0

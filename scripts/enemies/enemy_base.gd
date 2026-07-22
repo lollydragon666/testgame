@@ -30,6 +30,8 @@ var is_elite := false
 var _elite_modifiers_applied := false
 var hit_flash := 0.0
 var is_alive := true
+const VISUAL_DIRECTION_DOT_THRESHOLD := 0.9995
+var _last_visual_direction := Vector2.ZERO
 @onready var visual_root: EnemyVisual = $VisualRoot
 @onready var hurtbox: EntityHurtbox = $Hurtbox
 
@@ -37,6 +39,7 @@ func _ready() -> void:
 	add_to_group("enemy")
 	hurtbox.set_collision_radius(collision_radius)
 	position = IsoMath.world_to_screen(world_position)
+	_last_visual_direction = visual_direction()
 	refresh_visual()
 
 func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float, config: WorldConfig, enemy_definition: EnemyDefinition = null, elite := false) -> void:
@@ -78,6 +81,7 @@ func set_world_state(state: WorldState) -> void:
 func _physics_process(delta: float) -> void:
 	if not is_alive or player == null or world_config == null or not player.is_alive:
 		return
+	var had_hit_flash := hit_flash > 0.0
 	hit_flash = maxf(0.0, hit_flash - delta)
 	var previous_position := world_position
 	tick_behavior(delta)
@@ -91,7 +95,14 @@ func _physics_process(delta: float) -> void:
 	if world_state != null:
 		world_state.update_enemy(self)
 	position = IsoMath.world_to_screen(world_position)
-	refresh_visual()
+	var next_visual_direction := visual_direction()
+	if _last_visual_direction.is_zero_approx() or _last_visual_direction.dot(next_visual_direction) < VISUAL_DIRECTION_DOT_THRESHOLD:
+		_last_visual_direction = next_visual_direction
+		refresh_visual()
+	if had_hit_flash and hit_flash <= 0.0:
+		refresh_visual()
+	if is_visual_animation_active():
+		refresh_visual()
 
 func tick_behavior(delta: float) -> void:
 	move_toward_player(delta)
@@ -122,6 +133,15 @@ func take_damage(amount: float, knockback_direction: Vector2 = Vector2.ZERO) -> 
 func damage_player(amount: float = -1.0) -> void:
 	if player != null:
 		player.take_damage(contact_damage if amount < 0.0 else amount)
+
+func visual_direction() -> Vector2:
+	if player == null:
+		return Vector2.RIGHT
+	var offset := player.world_position - world_position
+	return offset.normalized() if not offset.is_zero_approx() else Vector2.RIGHT
+
+func is_visual_animation_active() -> bool:
+	return false
 
 func refresh_visual() -> void:
 	visual_root.queue_redraw()

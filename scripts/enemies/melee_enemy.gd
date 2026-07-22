@@ -57,3 +57,6 @@ func _swing_end_offset() -> float:
 func _swing_offset() -> float:
 	var progress := 1.0 - swing_time / SWING_DURATION
 	return lerpf(_swing_start_offset(), _swing_end_offset(), ease(progress, -2.2))
+
+func is_visual_animation_active() -> bool:
+	return swing_time > 0.0
