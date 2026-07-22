@@ -167,10 +167,11 @@ func _refresh() -> void:
 		if definition == null or not definition.can_sell:
 			continue
 		var owned_button := _button("%s%s\nПродажа: %d" % [
-			definition.display_name,
+			"%s · ур. %d" % [definition.display_name, item.item_level],
 			" ×%d" % item.quantity if item.quantity > 1 else "",
-			definition.resolved_sell_price(item.affixes.size()),
+			definition.resolved_item_sell_price(item),
 		])
+		owned_button.add_theme_color_override("font_color", ItemRarityPresentation.color(item.rarity))
 		owned_button.custom_minimum_size = Vector2(340.0, 52.0)
 		owned_button.disabled = not shop_service.can_sell(item.instance_id)
 		owned_button.pressed.connect(_select_owned.bind(item.instance_id))
@@ -224,7 +225,7 @@ func _rebuild_details() -> void:
 	var item := inventory.find_item(selected_owned_instance_id)
 	if item != null:
 		var definition := game_content.item(item.definition_id)
-		details_label.text = _definition_details(definition, "ПРОДАЖА: %d" % definition.resolved_sell_price(item.affixes.size()))
+		details_label.text = _item_details(item, definition, "ПРОДАЖА: %d" % definition.resolved_item_sell_price(item))
 		return
 	details_label.text = "[color=#8f7c61]Выберите товар для покупки или свой предмет для продажи.[/color]"
 
@@ -237,6 +238,23 @@ func _definition_details(definition: ItemDefinition, price_text: String) -> Stri
 		definition.description,
 		price_text,
 	]
+
+func _item_details(item: ItemInstance, definition: ItemDefinition, price_text: String) -> String:
+	if item == null or definition == null:
+		return ""
+	var rarity_color := ItemRarityPresentation.color_html(item.rarity)
+	var lines: Array[String] = [
+		"[font_size=24][color=#%s]%s[/color][/font_size]" % [rarity_color, definition.display_name],
+		"[color=#%s]%s[/color] · уровень %d" % [rarity_color, ItemRarityPresentation.rarity_name(item.rarity), item.item_level],
+		"",
+		definition.description,
+	]
+	if not item.affixes.is_empty():
+		lines.append("\n[color=#73b86b]СЛУЧАЙНЫЕ СВОЙСТВА[/color]")
+		for affix in item.affixes:
+			lines.append(ItemRarityPresentation.format_affix(affix, game_content))
+	lines.append("\n[color=#d0ad64]%s[/color]" % price_text)
+	return "\n".join(lines)
 
 func _select_stock(definition_id: StringName) -> void:
 	selected_stock_id = definition_id

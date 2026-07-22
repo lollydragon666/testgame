@@ -25,6 +25,17 @@ func resolved_sell_price(affix_count := 0) -> int:
 		base_value = maxi(1, floori(float(base_price) * 0.35))
 	return maxi(0, floori(float(base_value) * (1.0 + maxf(0.0, float(affix_count)) * 0.10)))
 
+func resolved_item_sell_price(item: ItemInstance) -> int:
+	if item == null:
+		return resolved_sell_price()
+	var base_value := resolved_sell_price()
+	if base_value <= 0:
+		return 0
+	var rarity_multipliers := [1.0, 1.20, 1.50, 2.0, 3.0]
+	var rarity_multiplier: float = rarity_multipliers[clampi(int(item.rarity), 0, rarity_multipliers.size() - 1)]
+	var level_multiplier := 1.0 + float(maxi(1, item.item_level) - 1) * 0.025
+	return maxi(1, floori(float(base_value) * rarity_multiplier * level_multiplier))
+
 func accepts_slot(slot: ItemEnums.EquipmentSlot) -> bool:
 	if equipment_slot == ItemEnums.EquipmentSlot.RING:
 		return slot == ItemEnums.EquipmentSlot.RING_1 or slot == ItemEnums.EquipmentSlot.RING_2

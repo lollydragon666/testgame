@@ -194,7 +194,15 @@ func _rebuild_item_grid() -> void:
 		var selected_marker := "◆ " if item.instance_id == selected_instance_id else ""
 		var quantity_text := " ×%d" % item.quantity if item.quantity > 1 else ""
 		var equipped_text := "\n[НАДЕТО]" if inventory.is_equipped(item.instance_id) else ""
-		var item_button := _button("%s%s%s%s" % [selected_marker, definition.display_name, quantity_text, equipped_text])
+		var item_button := _button("%s%s\n%s · ур. %d%s%s" % [
+			selected_marker,
+			ItemRarityPresentation.display_name(item, definition),
+			ItemRarityPresentation.rarity_name(item.rarity),
+			item.item_level,
+			quantity_text,
+			equipped_text,
+		])
+		item_button.add_theme_color_override("font_color", ItemRarityPresentation.color(item.rarity))
 		item_button.custom_minimum_size = Vector2(116.0, 78.0)
 		item_button.pressed.connect(_select_item.bind(item.instance_id))
 		item_grid.add_child(item_button)
@@ -226,22 +234,25 @@ func _rebuild_details() -> void:
 	if item == null or definition == null:
 		details_label.text = "[color=#8f7c61]Выберите предмет, чтобы увидеть его свойства.[/color]"
 		return
+	var rarity_color := ItemRarityPresentation.color_html(item.rarity)
 	var lines: Array[String] = [
-		"[font_size=24][color=#d0ad64]%s[/color][/font_size]" % definition.display_name,
-		"%s · %s" % [ItemEnums.item_type_name(definition.item_type), ItemEnums.rarity_name(item.rarity)],
+		"[font_size=24][color=#%s]%s[/color][/font_size]" % [rarity_color, ItemRarityPresentation.display_name(item, definition)],
+		"[color=#%s]%s[/color] · %s" % [rarity_color, ItemRarityPresentation.rarity_name(item.rarity), ItemEnums.item_type_name(definition.item_type)],
+		"Уровень предмета: %d" % item.item_level,
 		"Количество: %d" % item.quantity,
 		"",
 		definition.description,
-		"",
-		_definition_stats(definition),
 	]
+	var base_stats := _definition_stats(definition)
+	if not base_stats.is_empty():
+		lines.append("\n[color=#d0ad64]БАЗОВЫЕ ХАРАКТЕРИСТИКИ[/color]\n%s" % base_stats)
 	if not item.affixes.is_empty():
 		lines.append("\n[color=#73b86b]СЛУЧАЙНЫЕ СВОЙСТВА[/color]")
 		for affix in item.affixes:
-			var affix_definition := game_content.item_affix(affix.affix_id)
-			var affix_name := affix_definition.display_name if affix_definition != null else String(affix.affix_id)
-			var value_text := "%+.1f%%" % (affix.value * 100.0) if affix.is_percentage else "%+.1f" % affix.value
-			lines.append("%s: %s" % [affix_name, value_text])
+			lines.append(ItemRarityPresentation.format_affix(affix, game_content))
+	var final_stats := _instance_stats(item, definition)
+	if not final_stats.is_empty() and definition.item_type != ItemEnums.ItemType.CONSUMABLE:
+		lines.append("\n[color=#d0ad64]ИТОГОВЫЕ ХАРАКТЕРИСТИКИ[/color]\n%s" % final_stats)
 	var comparison := _comparison_text(item, definition)
 	if not comparison.is_empty():
 		lines.append("\n[color=#9b8ac4]СРАВНЕНИЕ[/color]\n%s" % comparison)
@@ -251,6 +262,9 @@ func _rebuild_details() -> void:
 func _build_actions(item: ItemInstance, definition: ItemDefinition) -> void:
 	if inventory.is_equipped(item.instance_id):
 		_add_action("СНЯТЬ", _unequip_selected)
+	elif definition.equipment_slot == ItemEnums.EquipmentSlot.RING:
+		_add_action("В КОЛЬЦО I", _equip_selected_to.bind(ItemEnums.EquipmentSlot.RING_1))
+		_add_action("В КОЛЬЦО II", _equip_selected_to.bind(ItemEnums.EquipmentSlot.RING_2))
 	elif definition.item_type != ItemEnums.ItemType.CONSUMABLE:
 		_add_action("ЭКИПИРОВАТЬ", _equip_selected)
 	if definition.item_type == ItemEnums.ItemType.CONSUMABLE:
@@ -286,6 +300,15 @@ func _equip_selected() -> void:
 	inventory.equip_item(item.instance_id, slot)
 	_refresh()
 
+func _equip_selected_to(slot: ItemEnums.EquipmentSlot) -> void:
+	var item := inventory.find_item(selected_instance_id)
+	if item == null:
+		return
+	if inventory.equipped_item(slot) != null:
+		inventory.unequip_slot(slot)
+	inventory.equip_item(item.instance_id, slot)
+	_refresh()
+
 func _unequip_selected() -> void:
 	var slot := _equipped_slot_for(selected_instance_id)
 	if slot != ItemEnums.EquipmentSlot.NONE:
@@ -311,19 +334,86 @@ func _equipped_slot_for(instance_id: String) -> ItemEnums.EquipmentSlot:
 func _comparison_text(item: ItemInstance, definition: ItemDefinition) -> String:
 	var slot := definition.equipment_slot
 	if slot == ItemEnums.EquipmentSlot.RING:
-		slot = ItemEnums.EquipmentSlot.RING_1
+		var ring_comparisons: Array[String] = []
+		for ring_slot in [ItemEnums.EquipmentSlot.RING_1, ItemEnums.EquipmentSlot.RING_2]:
+			var ring_text := _comparison_for_slot(item, definition, ring_slot)
+			if not ring_text.is_empty():
+				ring_comparisons.append("%s\n%s" % [_slot_name(ring_slot), ring_text])
+		return "\n\n".join(ring_comparisons)
 	if slot == ItemEnums.EquipmentSlot.NONE or slot == ItemEnums.EquipmentSlot.CONSUMABLE_2:
 		return ""
+	return _comparison_for_slot(item, definition, slot)
+
+func _comparison_for_slot(
+	item: ItemInstance,
+	definition: ItemDefinition,
+	slot: ItemEnums.EquipmentSlot
+) -> String:
 	var equipped := inventory.equipped_definition(slot)
 	var equipped_item := inventory.equipped_item(slot)
 	if equipped == null or equipped_item == null or equipped_item.instance_id == item.instance_id:
 		return ""
-	return "%s (надето)\n%s\n\n%s (выбрано)\n%s" % [
-		equipped.display_name,
-		_definition_stats(equipped),
-		definition.display_name,
-		_definition_stats(definition),
+	var equipped_values := _comparison_values(equipped_item, equipped)
+	var selected_values := _comparison_values(item, definition)
+	var lines: Array[String] = []
+	for index in mini(equipped_values.size(), selected_values.size()):
+		var old_row: Array = equipped_values[index]
+		var new_row: Array = selected_values[index]
+		var old_value := float(old_row[1])
+		var new_value := float(new_row[1])
+		var difference := new_value - old_value
+		var is_percent := bool(new_row[2])
+		var lower_is_better := bool(new_row[3])
+		var better := difference < -0.0001 if lower_is_better else difference > 0.0001
+		var delta_color := "73b86b" if better else "bd5a52" if not is_zero_approx(difference) else "8f7c61"
+		lines.append("%s: %s → %s  [color=#%s](%s)[/color]" % [
+			String(new_row[0]),
+			_format_stat_value(old_value, is_percent),
+			_format_stat_value(new_value, is_percent),
+			delta_color,
+			_format_delta(difference, is_percent),
+		])
+	return "\n".join(lines)
+
+func _comparison_values(item: ItemInstance, definition: ItemDefinition) -> Array[Array]:
+	var stats := ItemInstanceStatCalculator.calculate(item, definition, game_content)
+	if definition is WeaponDefinition:
+		return [
+			["Урон", stats.damage, false, false],
+			["Cooldown", stats.cooldown, false, true],
+			["Дальность", stats.attack_reach, false, false],
+			["Ширина", stats.attack_width, false, false],
+			["Крит. шанс", stats.critical_chance, true, false],
+			["Крит. урон", stats.critical_damage, true, false],
+		]
+	if definition is ArmorDefinition:
+		return [["Защита", stats.defense, false, false], ["Здоровье", stats.max_health, false, false], ["Движение", stats.movement_speed, true, false]]
+	return [
+		["Урон", stats.damage_percent, true, false],
+		["Защита", stats.defense, false, false],
+		["Здоровье", stats.max_health, false, false],
+		["Скорость атаки", stats.attack_speed, true, false],
+		["Движение", stats.movement_speed, true, false],
+		["Крит. шанс", stats.critical_chance, true, false],
+		["Крит. урон", stats.critical_damage, true, false],
+		["Добыча", stats.loot_chance, true, false],
 	]
+
+func _format_stat_value(value: float, percentage: bool) -> String:
+	return "%.1f%%" % (value * 100.0) if percentage else "%.2f" % value
+
+func _format_delta(value: float, percentage: bool) -> String:
+	return "%+.1f%%" % (value * 100.0) if percentage else "%+.2f" % value
+
+func _instance_stats(item: ItemInstance, definition: ItemDefinition) -> String:
+	var stats := ItemInstanceStatCalculator.calculate(item, definition, game_content)
+	if definition is WeaponDefinition:
+		return "Урон %.0f · Cooldown %.3fс\nДальность %.1f · Ширина %.1f\nКрит %+.1f%% · Крит. урон %+.1f%%" % [stats.damage, stats.cooldown, stats.attack_reach, stats.attack_width, stats.critical_chance * 100.0, stats.critical_damage * 100.0]
+	if definition is ArmorDefinition:
+		return "Защита %.0f · Здоровье %+.0f\nСкорость %+.1f%%" % [stats.defense, stats.max_health, stats.movement_speed * 100.0]
+	if definition is JewelryDefinition:
+		return "Урон %+.1f%% · Защита %+.0f · Здоровье %+.0f\nАтака %+.1f%% · Движение %+.1f%% · Крит %+.1f%%\nКрит. урон %+.1f%% · Добыча %+.1f%%" % [stats.damage_percent * 100.0, stats.defense, stats.max_health, stats.attack_speed * 100.0, stats.movement_speed * 100.0, stats.critical_chance * 100.0, stats.critical_damage * 100.0, stats.loot_chance * 100.0]
+	return _definition_stats(definition)
 
 func _definition_stats(definition: ItemDefinition) -> String:
 	if definition is WeaponDefinition:

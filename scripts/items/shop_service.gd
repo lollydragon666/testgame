@@ -71,7 +71,7 @@ func can_sell(instance_id: String, quantity := 1) -> bool:
 		definition != null
 		and definition.can_sell
 		and item.definition_id != InventoryService.STARTER_WEAPON_ID
-		and definition.resolved_sell_price(item.affixes.size()) > 0
+		and definition.resolved_item_sell_price(item) > 0
 	)
 
 func sell_item(instance_id: String, quantity := 1) -> bool:
@@ -80,7 +80,7 @@ func sell_item(instance_id: String, quantity := 1) -> bool:
 		return false
 	var item := inventory.find_item(instance_id)
 	var definition := game_content.item(item.definition_id)
-	var total_price := definition.resolved_sell_price(item.affixes.size()) * quantity
+	var total_price := definition.resolved_item_sell_price(item) * quantity
 	inventory.begin_transaction()
 	if not inventory.remove_item(instance_id, quantity):
 		inventory.end_transaction()
