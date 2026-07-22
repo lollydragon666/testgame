@@ -1,6 +1,9 @@
 class_name MainMenu
 extends Control
 
+var reset_progress_button: Button
+var reset_confirmation: ConfirmationDialog
+
 func _ready() -> void:
 	_build_interface()
 
@@ -12,8 +15,8 @@ func _build_interface() -> void:
 
 	var panel := VBoxContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.position = Vector2(-270.0, -205.0)
-	panel.size = Vector2(540.0, 410.0)
+	panel.position = Vector2(-270.0, -280.0)
+	panel.size = Vector2(540.0, 560.0)
 	panel.add_theme_constant_override("separation", 22)
 	background.add_child(panel)
 
@@ -40,16 +43,39 @@ func _build_interface() -> void:
 	sandbox_button.pressed.connect(_show_sandbox)
 	panel.add_child(sandbox_button)
 
+	reset_progress_button = _make_button("ResetProgressButton", "СБРОСИТЬ ПРОГРЕСС")
+	reset_progress_button.add_theme_color_override("font_color", Color("b86f61"))
+	reset_progress_button.pressed.connect(_request_progress_reset)
+	panel.add_child(reset_progress_button)
+
 	var exit_button := _make_button("ExitButton", "ВЫЙТИ")
 	exit_button.pressed.connect(get_tree().quit)
 	exit_button.visible = not OS.has_feature("web")
 	panel.add_child(exit_button)
+
+	reset_confirmation = ConfirmationDialog.new()
+	reset_confirmation.name = "ResetProgressConfirmation"
+	reset_confirmation.title = "СБРОС ПРОГРЕССА"
+	reset_confirmation.dialog_text = "Удалить весь постоянный прогресс, предметы и золото?\nЭто действие нельзя отменить."
+	reset_confirmation.ok_button_text = "СБРОСИТЬ"
+	reset_confirmation.cancel_button_text = "ОТМЕНА"
+	reset_confirmation.confirmed.connect(_confirm_progress_reset)
+	add_child(reset_confirmation)
 
 func _show_hub() -> void:
 	get_node("/root/SceneRouter").show_hub()
 
 func _show_sandbox() -> void:
 	get_node("/root/SceneRouter").show_combat_sandbox()
+
+func _request_progress_reset() -> void:
+	reset_confirmation.popup_centered(Vector2i(520, 220))
+
+func _confirm_progress_reset() -> void:
+	var session := get_node_or_null("/root/GameSession")
+	if session != null and session.reset_profile():
+		reset_progress_button.text = "ПРОГРЕСС СБРОШЕН"
+		reset_progress_button.disabled = true
 
 func _make_button(node_name: String, text_value: String) -> Button:
 	var button := Button.new()

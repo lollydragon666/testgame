@@ -71,6 +71,18 @@ func load_profile(path := SAVE_PATH) -> bool:
 	profile.load_dict(parsed)
 	return true
 
+## Полностью заменяет постоянный прогресс новым профилем и сразу записывает его.
+## Отдельный путь позволяет безопасно проверять сброс без изменения основного save.
+func reset_profile(path := SAVE_PATH) -> bool:
+	profile = PlayerProfile.new()
+	_configure_inventory()
+	selected_location_id = &"test_location"
+	selected_location_tier = 1
+	current_run_seed = 0
+	last_expedition_result = null
+	current_mode = Mode.MENU
+	return save_profile(path)
+
 func set_mode(mode: Mode) -> void:
 	current_mode = mode
 

@@ -36,6 +36,12 @@ func _run() -> void:
 	var first_menu := app.active_scene
 	var rpg_button := first_menu.find_child("RpgModeButton", true, false) as Button
 	_require(rpg_button != null, "MainMenu RPG button is missing")
+	var reset_button := first_menu.find_child("ResetProgressButton", true, false) as Button
+	var reset_dialog := first_menu.find_child("ResetProgressConfirmation", true, false) as ConfirmationDialog
+	_require(reset_button != null and reset_dialog != null, "MainMenu progress reset controls are missing")
+	reset_button.pressed.emit()
+	_require(reset_dialog.visible, "Progress reset confirmation did not open")
+	reset_dialog.hide()
 	rpg_button.pressed.emit()
 	_require(app.active_scene is HubController, "MainMenu to Hub route failed")
 	_require(first_menu.get_parent() == null, "Previous scene remained attached after transition")
