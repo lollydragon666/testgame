@@ -14,6 +14,7 @@ func _require(condition: bool, message: String) -> void:
 func _run() -> void:
 	_validate_loot_tables()
 	_validate_affixes()
+	_validate_item_factory()
 	_validate_save_round_trip()
 	await _validate_world_drops()
 	print("LOOT AFFIXES AND SAVE PASS")
@@ -96,6 +97,7 @@ func _validate_affixes() -> void:
 	_require(generator.maximum_rarity_for_wave(13) == ItemEnums.ItemRarity.LEGENDARY, "Wave 13 rarity cap is incorrect")
 
 	var legendary := ItemInstance.create(&"iron_sabre", 1, ItemEnums.ItemRarity.LEGENDARY)
+	legendary.item_level = 20
 	generator.apply_affixes(legendary, weapon_definition, rng)
 	var saved := legendary.to_dict()
 	var loaded := ItemInstance.from_dict(saved)
@@ -157,6 +159,25 @@ func _validate_save_round_trip() -> void:
 	_require(legacy_inventory.equipped_definition(ItemEnums.EquipmentSlot.WEAPON).id == &"iron_sabre", "Legacy selected weapon was not migrated")
 	legacy_inventory.load_serialized(legacy_inventory.serialized_items(), legacy_inventory.serialized_equipment(), legacy.selected_weapon_definition_id)
 	_require(legacy_inventory.inventory_size() == 1, "Legacy weapon duplicated on repeated load")
+
+func _validate_item_factory() -> void:
+	var factory := ItemFactory.new()
+	factory.configure(CONTENT)
+	var first_rng := RandomNumberGenerator.new()
+	var second_rng := RandomNumberGenerator.new()
+	first_rng.seed = 73921
+	second_rng.seed = 73921
+	var first := factory.create_random_item(&"iron_sabre", 12, ItemEnums.ItemRarity.EPIC, first_rng)
+	var second := factory.create_random_item(&"iron_sabre", 12, ItemEnums.ItemRarity.EPIC, second_rng)
+	_require(first != null and second != null, "Item factory did not create randomized items")
+	_require(first.instance_id != second.instance_id, "Randomized item UUIDs collided")
+	_require(first.instance_id.begins_with("item-") and first.instance_id.length() == 41, "Item UUID format is invalid")
+	_require(first.item_level == 12 and first.rarity == ItemEnums.ItemRarity.EPIC, "Random item metadata is invalid")
+	_require(first.generated_seed == second.generated_seed, "Identical RNG inputs did not preserve the same generation seed")
+	_require(JSON.stringify(first.to_dict().affixes) == JSON.stringify(second.to_dict().affixes), "Identical seeds generated different affixes")
+	_require(factory.validate_item_instance(first), "Generated item did not pass validation")
+	var fixed := factory.create_fixed_item(&"iron_sabre")
+	_require(fixed != null and fixed.affixes.is_empty() and fixed.generated_seed == 0, "Fixed item received randomized properties")
 
 func _validate_world_drops() -> void:
 	var full_inventory := InventoryService.new()

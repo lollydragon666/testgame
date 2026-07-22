@@ -9,6 +9,7 @@ signal notification_requested(message: String)
 var game_content: GameContent
 var inventory: InventoryService
 var profile: PlayerProfile
+var item_factory := ItemFactory.new()
 var _save_callback: Callable
 
 func configure(
@@ -20,6 +21,7 @@ func configure(
 	game_content = content
 	inventory = inventory_service
 	profile = player_profile
+	item_factory.configure(content)
 	_save_callback = save_callback
 
 func can_buy(shop_id: StringName, definition_id: StringName, quantity := 1) -> bool:
@@ -31,10 +33,13 @@ func can_buy(shop_id: StringName, definition_id: StringName, quantity := 1) -> b
 		return false
 	if definition.base_price <= 0:
 		return false
+	if not definition.stackable and quantity != 1:
+		return false
 	var total_price := definition.base_price * quantity
 	if profile.gold < total_price:
 		return false
-	return inventory.can_add_item(ItemInstance.create(definition_id, quantity, definition.rarity))
+	var candidate := item_factory.create_fixed_item(definition_id, quantity)
+	return candidate != null and inventory.can_add_item(candidate)
 
 func buy_item(shop_id: StringName, definition_id: StringName, quantity := 1) -> bool:
 	if not can_buy(shop_id, definition_id, quantity):
@@ -42,7 +47,7 @@ func buy_item(shop_id: StringName, definition_id: StringName, quantity := 1) -> 
 		return false
 	var definition := game_content.item(definition_id)
 	var total_price := definition.base_price * quantity
-	var purchased_item := ItemInstance.create(definition_id, quantity, definition.rarity)
+	var purchased_item := item_factory.create_fixed_item(definition_id, quantity)
 	inventory.begin_transaction()
 	if not inventory.add_item(purchased_item):
 		inventory.end_transaction()

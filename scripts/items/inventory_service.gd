@@ -12,6 +12,7 @@ const CAPACITY := 40
 const STARTER_WEAPON_ID := &"player_sword"
 
 var game_content: GameContent
+var item_factory := ItemFactory.new()
 var _items: Array[ItemInstance] = []
 var _equipped_items: Dictionary = {}
 var _consumable_cooldowns: Dictionary[ItemEnums.EquipmentSlot, float] = {}
@@ -21,6 +22,7 @@ var _inventory_change_pending := false
 
 func configure(content: GameContent) -> void:
 	game_content = content
+	item_factory.configure(content)
 	_reset_equipment()
 	reset_consumable_runtime()
 
@@ -162,7 +164,8 @@ func add_item_by_definition(definition_id: StringName, quantity := 1) -> bool:
 	var definition := game_content.item(definition_id)
 	if definition == null:
 		return false
-	return add_item(ItemInstance.create(definition_id, quantity, definition.rarity))
+	var item := item_factory.create_fixed_item(definition_id, quantity)
+	return add_item(item) if item != null else false
 
 func remove_item(instance_id: String, quantity := 1) -> bool:
 	if quantity <= 0:

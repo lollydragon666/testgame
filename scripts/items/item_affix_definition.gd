@@ -23,7 +23,7 @@ func supports(definition: ItemDefinition, item_level := 1) -> bool:
 	return allowed_slots.is_empty() or allowed_slots.has(definition.equipment_slot)
 
 func value_range(item_level: int) -> Vector2:
-	var level_bonus := float(maxi(0, item_level - 1)) * value_per_item_level
+	var level_bonus := float(maxi(0, item_level - minimum_item_level)) * value_per_item_level
 	return Vector2(minf(base_min, base_max) + level_bonus, maxf(base_min, base_max) + level_bonus)
 
 func roll(rng: RandomNumberGenerator, item_level := 1) -> ItemAffixRoll:
