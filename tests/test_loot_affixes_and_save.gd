@@ -68,7 +68,8 @@ func _weights(table: LootTable) -> Array[int]:
 	return result
 
 func _validate_affixes() -> void:
-	_require(CONTENT.item_affixes != null and CONTENT.item_affixes.definitions.size() == 8, "Expected eight affix definitions")
+	_require(CONTENT.item_affixes != null and CONTENT.item_affixes.definitions.size() >= 13, "Expected the expanded affix catalog")
+	_require(CONTENT.item_affixes.validate().is_empty(), "Affix catalog validation failed")
 	var generator := ItemAffixGenerator.new()
 	generator.configure(CONTENT.item_affixes)
 	var rng := RandomNumberGenerator.new()
@@ -76,6 +77,7 @@ func _validate_affixes() -> void:
 	var weapon_definition := CONTENT.item(&"iron_sabre")
 	for rarity_value in range(ItemEnums.ItemRarity.COMMON, ItemEnums.ItemRarity.LEGENDARY + 1):
 		var item := ItemInstance.create(weapon_definition.id, 1, rarity_value as ItemEnums.ItemRarity)
+		item.item_level = 20
 		generator.apply_affixes(item, weapon_definition, rng)
 		_require(item.affixes.size() == rarity_value, "Affix count does not match rarity %d" % rarity_value)
 		var seen: Dictionary[StringName, bool] = {}
@@ -83,9 +85,10 @@ func _validate_affixes() -> void:
 			_require(not seen.has(affix.affix_id), "Generated duplicate affix")
 			seen[affix.affix_id] = true
 			var affix_definition := CONTENT.item_affix(affix.affix_id)
-			_require(affix_definition.supports(weapon_definition.item_type), "Generated incompatible affix")
-			_require(affix.value >= minf(affix_definition.min_value, affix_definition.max_value), "Affix value is below range")
-			_require(affix.value <= maxf(affix_definition.min_value, affix_definition.max_value), "Affix value is above range")
+			_require(affix_definition.supports(weapon_definition, item.item_level), "Generated incompatible affix")
+			var limits := affix_definition.value_range(item.item_level)
+			_require(affix.value >= limits.x, "Affix value is below range")
+			_require(affix.value <= limits.y, "Affix value is above range")
 
 	_require(generator.maximum_rarity_for_wave(1) == ItemEnums.ItemRarity.UNCOMMON, "Wave 1 rarity cap is incorrect")
 	_require(generator.maximum_rarity_for_wave(4) == ItemEnums.ItemRarity.RARE, "Wave 4 rarity cap is incorrect")
@@ -111,7 +114,7 @@ func _validate_affixes() -> void:
 	for ring in [first_ring, second_ring]:
 		var critical_affix := ItemAffixRoll.new()
 		critical_affix.affix_id = &"precise"
-		critical_affix.stat = ItemEnums.StatType.CRITICAL_CHANCE
+		critical_affix.stat = ItemEnums.ItemStatType.CRITICAL_CHANCE
 		critical_affix.value = 1.0
 		ring.affixes.append(critical_affix)
 		_require(inventory.add_item(ring), "Critical cap test item could not be added")

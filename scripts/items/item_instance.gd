@@ -7,6 +7,7 @@ var instance_id := ""
 var definition_id: StringName
 var quantity := 1
 var rarity: ItemEnums.ItemRarity = ItemEnums.ItemRarity.COMMON
+var item_level := 1
 var affixes: Array[ItemAffixRoll] = []
 var saved_parameters: Dictionary = {}
 

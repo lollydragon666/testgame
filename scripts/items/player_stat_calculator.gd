@@ -46,11 +46,12 @@ static func _apply_affix(stats: PlayerStats, affix: ItemAffixRoll) -> void:
 	if affix == null:
 		return
 	match affix.stat:
-		ItemEnums.StatType.DAMAGE: stats.damage_bonus += affix.value
-		ItemEnums.StatType.DEFENSE: stats.defense += affix.value
-		ItemEnums.StatType.MAX_HEALTH: stats.max_health_bonus += affix.value
-		ItemEnums.StatType.MOVEMENT_SPEED: stats.movement_speed_bonus += affix.value
-		ItemEnums.StatType.ATTACK_SPEED: stats.attack_speed_bonus += affix.value
-		ItemEnums.StatType.CRITICAL_CHANCE: stats.critical_chance += affix.value
-		ItemEnums.StatType.CRITICAL_DAMAGE: stats.critical_damage += affix.value
-		ItemEnums.StatType.LOOT_CHANCE: stats.loot_chance += affix.value
+		ItemEnums.ItemStatType.DAMAGE_FLAT: stats.damage_bonus += affix.value
+		ItemEnums.ItemStatType.DAMAGE_PERCENT: stats.damage_bonus += affix.value
+		ItemEnums.ItemStatType.DEFENSE_FLAT: stats.defense += affix.value
+		ItemEnums.ItemStatType.MAX_HEALTH_FLAT: stats.max_health_bonus += affix.value
+		ItemEnums.ItemStatType.MOVEMENT_SPEED_PERCENT: stats.movement_speed_bonus += affix.value
+		ItemEnums.ItemStatType.ATTACK_SPEED_PERCENT: stats.attack_speed_bonus += affix.value
+		ItemEnums.ItemStatType.CRITICAL_CHANCE: stats.critical_chance += affix.value
+		ItemEnums.ItemStatType.CRITICAL_DAMAGE: stats.critical_damage += affix.value
+		ItemEnums.ItemStatType.LOOT_CHANCE: stats.loot_chance += affix.value

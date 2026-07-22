@@ -2,6 +2,7 @@ class_name ItemAffixGenerator
 extends RefCounted
 
 var catalog: ItemAffixCatalog
+var rarity_roller := ItemRarityRoller.new()
 
 func configure(affix_catalog: ItemAffixCatalog) -> void:
 	catalog = affix_catalog
@@ -29,37 +30,23 @@ func apply_affixes(
 	item.affixes.clear()
 	if definition.item_type == ItemEnums.ItemType.CONSUMABLE or catalog == null:
 		return
-	var available := catalog.compatible(definition.item_type)
+	var available := catalog.compatible(definition, item.item_level)
 	var target_count := mini(affix_count_for_rarity(item.rarity), available.size())
 	for _index in target_count:
 		var selected := _weighted_take(available, rng)
 		if selected == null:
 			break
-		var roll := selected.roll(rng)
+		var roll := selected.roll(rng, item.item_level)
 		if roll != null:
 			item.affixes.append(roll)
+		if not selected.exclusive_group.is_empty():
+			_remove_exclusive_group(available, selected.exclusive_group)
 
 func roll_rarity(wave: int, rng: RandomNumberGenerator) -> ItemEnums.ItemRarity:
-	var roll := rng.randf()
-	var rarity := ItemEnums.ItemRarity.COMMON
-	if roll >= 0.99:
-		rarity = ItemEnums.ItemRarity.LEGENDARY
-	elif roll >= 0.95:
-		rarity = ItemEnums.ItemRarity.EPIC
-	elif roll >= 0.85:
-		rarity = ItemEnums.ItemRarity.RARE
-	elif roll >= 0.60:
-		rarity = ItemEnums.ItemRarity.UNCOMMON
-	return mini(rarity, maximum_rarity_for_wave(wave)) as ItemEnums.ItemRarity
+	return rarity_roller.roll(wave, rng)
 
 func maximum_rarity_for_wave(wave: int) -> ItemEnums.ItemRarity:
-	if wave <= 3:
-		return ItemEnums.ItemRarity.UNCOMMON
-	if wave <= 7:
-		return ItemEnums.ItemRarity.RARE
-	if wave <= 12:
-		return ItemEnums.ItemRarity.EPIC
-	return ItemEnums.ItemRarity.LEGENDARY
+	return rarity_roller.maximum_for_wave(wave)
 
 func affix_count_for_rarity(rarity: ItemEnums.ItemRarity) -> int:
 	return clampi(int(rarity), 0, 4)
@@ -82,3 +69,11 @@ func _weighted_take(
 	var fallback: ItemAffixDefinition = available.back()
 	available.pop_back()
 	return fallback
+
+func _remove_exclusive_group(
+	available: Array[ItemAffixDefinition],
+	exclusive_group: StringName
+) -> void:
+	for index in range(available.size() - 1, -1, -1):
+		if available[index].exclusive_group == exclusive_group:
+			available.remove_at(index)
