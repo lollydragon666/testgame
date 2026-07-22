@@ -14,6 +14,8 @@ const STARTER_WEAPON_ID := &"player_sword"
 var game_content: GameContent
 var item_factory := ItemFactory.new()
 var _items: Array[ItemInstance] = []
+var _run_inventory: RunInventoryService
+var _starting_permanent_equipment: Dictionary = {}
 var _equipped_items: Dictionary = {}
 var _consumable_cooldowns: Dictionary[ItemEnums.EquipmentSlot, float] = {}
 var _consumable_handler: Callable
@@ -28,6 +30,33 @@ func configure(content: GameContent) -> void:
 
 func configure_consumable_handler(handler: Callable) -> void:
 	_consumable_handler = handler
+
+func attach_run_inventory(storage: RunInventoryService, starting_equipment: Dictionary) -> void:
+	if _run_inventory == storage:
+		_starting_permanent_equipment = starting_equipment.duplicate(true)
+		return
+	if _run_inventory != null and _run_inventory.run_inventory_changed.is_connected(_on_run_inventory_changed):
+		_run_inventory.run_inventory_changed.disconnect(_on_run_inventory_changed)
+	_run_inventory = storage
+	_starting_permanent_equipment = starting_equipment.duplicate(true)
+	if _run_inventory != null:
+		_run_inventory.run_inventory_changed.connect(_on_run_inventory_changed)
+	_emit_inventory_changed()
+
+func detach_run_inventory() -> void:
+	if _run_inventory != null and _run_inventory.run_inventory_changed.is_connected(_on_run_inventory_changed):
+		_run_inventory.run_inventory_changed.disconnect(_on_run_inventory_changed)
+	_run_inventory = null
+	_starting_permanent_equipment.clear()
+	# Remove dangling references to discarded run items.
+	for slot in _equipped_items:
+		if _find_permanent_item(String(_equipped_items[slot])) == null:
+			_equipped_items[slot] = ""
+	_emit_inventory_changed()
+	equipment_changed.emit()
+
+func _on_run_inventory_changed() -> void:
+	_emit_inventory_changed()
 
 func begin_transaction() -> void:
 	_transaction_depth += 1
@@ -252,7 +281,9 @@ func add_item_by_definition(definition_id: StringName, quantity := 1) -> bool:
 func remove_item(instance_id: String, quantity := 1) -> bool:
 	if quantity <= 0:
 		return false
-	var item := find_item(instance_id)
+	var item := _find_permanent_item(instance_id)
+	if item == null and _run_inventory != null:
+		return _run_inventory.remove_item(instance_id, quantity)
 	if item == null or quantity > item.quantity:
 		return false
 	if quantity == item.quantity and _is_instance_equipped(instance_id):
@@ -265,17 +296,32 @@ func remove_item(instance_id: String, quantity := 1) -> bool:
 	return true
 
 func find_item(instance_id: String) -> ItemInstance:
+	var permanent_item := _find_permanent_item(instance_id)
+	if permanent_item != null:
+		return permanent_item
+	return _run_inventory.find_item(instance_id) if _run_inventory != null else null
+
+func _find_permanent_item(instance_id: String) -> ItemInstance:
 	for item in _items:
 		if item.instance_id == instance_id:
 			return item
 	return null
 
+func permanent_item(instance_id: String) -> ItemInstance:
+	return _find_permanent_item(instance_id)
+
+func is_run_item(instance_id: String) -> bool:
+	return _run_inventory != null and _run_inventory.has_item(instance_id)
+
 func get_items() -> Array[ItemInstance]:
-	return _items.duplicate()
+	var result := _items.duplicate()
+	if _run_inventory != null:
+		result.append_array(_run_inventory.get_items())
+	return result
 
 func get_items_by_type(item_type: ItemEnums.ItemType) -> Array[ItemInstance]:
 	var result: Array[ItemInstance] = []
-	for item in _items:
+	for item in get_items():
 		var definition := game_content.item(item.definition_id)
 		if definition != null and definition.item_type == item_type:
 			result.append(item)
@@ -338,11 +384,22 @@ func serialized_items() -> Array[Dictionary]:
 func serialized_equipment() -> Dictionary:
 	var result := {}
 	for slot in _equipped_items:
-		result[String.num_int64(slot)] = String(_equipped_items[slot])
+		var key := String.num_int64(slot)
+		var instance_id := String(_equipped_items[slot])
+		if _find_permanent_item(instance_id) == null:
+			var starting_id := String(_starting_permanent_equipment.get(key, ""))
+			instance_id = starting_id if _find_permanent_item(starting_id) != null else ""
+		result[key] = instance_id
 	return result
 
 func inventory_size() -> int:
+	return _items.size() + (_run_inventory.item_count() if _run_inventory != null else 0)
+
+func permanent_inventory_size() -> int:
 	return _items.size()
+
+func run_inventory_size() -> int:
+	return _run_inventory.item_count() if _run_inventory != null else 0
 
 func use_consumable_slot(slot: ItemEnums.EquipmentSlot) -> bool:
 	if slot != ItemEnums.EquipmentSlot.CONSUMABLE_2 and slot != ItemEnums.EquipmentSlot.CONSUMABLE_3:
@@ -390,6 +447,7 @@ func reset_consumable_runtime() -> void:
 		consumable_cooldown_changed.emit(slot, 0.0, 0.0)
 
 func clear_for_tests() -> void:
+	detach_run_inventory()
 	_items.clear()
 	_reset_equipment()
 	reset_consumable_runtime()

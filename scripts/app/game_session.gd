@@ -45,7 +45,8 @@ func _on_inventory_changed() -> void:
 func _sync_inventory_profile() -> void:
 	profile.inventory_items = inventory.serialized_items()
 	profile.equipped_items = inventory.serialized_equipment()
-	var weapon := inventory.equipped_item(ItemEnums.EquipmentSlot.WEAPON)
+	var weapon_id := String(profile.equipped_items.get(String.num_int64(ItemEnums.EquipmentSlot.WEAPON), ""))
+	var weapon := inventory.permanent_item(weapon_id)
 	profile.selected_weapon_definition_id = weapon.definition_id if weapon != null else &""
 	profile.save_version = PlayerProfile.SAVE_VERSION
 
@@ -117,6 +118,7 @@ func start_new_run() -> bool:
 		return false
 	run_inventory.clear()
 	run_context = RunContext.create(inventory.serialized_equipment())
+	inventory.attach_run_inventory(run_inventory, run_context.starting_equipment)
 	return true
 
 func select_expedition(location_id: StringName, tier: int) -> bool:

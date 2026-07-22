@@ -63,6 +63,8 @@ func buy_item(shop_id: StringName, definition_id: StringName, quantity := 1) -> 
 func can_sell(instance_id: String, quantity := 1) -> bool:
 	if quantity <= 0 or game_content == null or inventory == null or profile == null:
 		return false
+	if inventory.is_run_item(instance_id):
+		return false
 	var item := inventory.find_item(instance_id)
 	if item == null or quantity > item.quantity or inventory.is_equipped(instance_id):
 		return false
@@ -75,6 +77,9 @@ func can_sell(instance_id: String, quantity := 1) -> bool:
 	)
 
 func sell_item(instance_id: String, quantity := 1) -> bool:
+	if inventory != null and inventory.is_run_item(instance_id):
+		_notify("Добычу можно продать после успешного завершения забега")
+		return false
 	if not can_sell(instance_id, quantity):
 		_notify("Продажа невозможна")
 		return false

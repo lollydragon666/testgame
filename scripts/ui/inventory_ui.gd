@@ -174,7 +174,12 @@ func _refresh() -> void:
 	if not selected_instance_id.is_empty() and inventory.find_item(selected_instance_id) == null:
 		selected_instance_id = ""
 	gold_label.text = "ЗОЛОТО: %d" % (profile.gold if profile != null else 0)
-	capacity_label.text = "ЯЧЕЙКИ: %d / %d" % [inventory.inventory_size(), InventoryService.CAPACITY]
+	capacity_label.text = "ПОСТОЯННЫЕ: %d / %d · ДОБЫЧА: %d / %d" % [
+		inventory.permanent_inventory_size(),
+		InventoryService.CAPACITY,
+		inventory.run_inventory_size(),
+		RunInventoryService.CAPACITY,
+	]
 	_rebuild_item_grid()
 	_rebuild_equipment()
 	_rebuild_details()
@@ -194,13 +199,15 @@ func _rebuild_item_grid() -> void:
 		var selected_marker := "◆ " if item.instance_id == selected_instance_id else ""
 		var quantity_text := " ×%d" % item.quantity if item.quantity > 1 else ""
 		var equipped_text := "\n[НАДЕТО]" if inventory.is_equipped(item.instance_id) else ""
-		var item_button := _button("%s%s\n%s · ур. %d%s%s" % [
+		var source_text := "\n[ДОБЫЧА ЗАБЕГА]" if inventory.is_run_item(item.instance_id) else ""
+		var item_button := _button("%s%s\n%s · ур. %d%s%s%s" % [
 			selected_marker,
 			ItemRarityPresentation.display_name(item, definition),
 			ItemRarityPresentation.rarity_name(item.rarity),
 			item.item_level,
 			quantity_text,
 			equipped_text,
+			source_text,
 		])
 		item_button.add_theme_color_override("font_color", ItemRarityPresentation.color(item.rarity))
 		item_button.custom_minimum_size = Vector2(116.0, 78.0)
@@ -240,6 +247,7 @@ func _rebuild_details() -> void:
 		"[color=#%s]%s[/color] · %s" % [rarity_color, ItemRarityPresentation.rarity_name(item.rarity), ItemEnums.item_type_name(definition.item_type)],
 		"Уровень предмета: %d" % item.item_level,
 		"Количество: %d" % item.quantity,
+		"[color=#d49a3a]ВРЕМЕННАЯ ДОБЫЧА ЗАБЕГА[/color]" if inventory.is_run_item(item.instance_id) else "[color=#8f7c61]ПОСТОЯННЫЙ ПРЕДМЕТ[/color]",
 		"",
 		definition.description,
 	]

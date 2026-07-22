@@ -90,6 +90,7 @@ func _ready() -> void:
 		run_inventory.configure(GAME_CONTENT)
 	if run_context == null:
 		run_context = RunContext.new()
+	inventory_service.attach_run_inventory(run_inventory, run_context.starting_equipment)
 	world_state = WorldState.new()
 	world_state.name = "WorldState"
 	world_state.configure(WORLD_CONFIG)
@@ -180,6 +181,7 @@ func _start_run() -> void:
 	if run_context.state != RunContext.RunState.ACTIVE:
 		run_inventory.clear()
 		run_context = RunContext.create(inventory_service.serialized_equipment())
+		inventory_service.attach_run_inventory(run_inventory, run_context.starting_equipment)
 	get_tree().paused = false
 	pending_level_ups = 0
 	current_upgrade_choices.clear()
