@@ -3,6 +3,7 @@ extends Node2D
 
 const HUB_MOVE_SPEED := 260.0
 const HUB_LIMIT := Vector2(520.0, 280.0)
+const GAME_CONTENT: GameContent = preload("res://resources/game_content.tres")
 
 @onready var hub_player: Node2D = $HubPlayer
 @onready var portal: HubPortal = $ExpeditionPortal
@@ -12,15 +13,21 @@ var gold_label: Label
 var portal_hint: Label
 var altar_message: Label
 var tier_status_label: Label
+var inventory_ui: InventoryUI
+var shop_ui: ShopUI
 
 func _ready() -> void:
 	portal.configure(hub_player)
 	portal.expedition_requested.connect(_start_expedition)
 	_build_ui()
+	_build_item_interfaces()
 	_refresh_profile_ui()
 	queue_redraw()
 
 func _process(delta: float) -> void:
+	if (inventory_ui != null and inventory_ui.is_open()) or (shop_ui != null and shop_ui.is_open()):
+		portal_hint.visible = false
+		return
 	var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	hub_player.position += input_vector * HUB_MOVE_SPEED * delta
 	hub_player.position = hub_player.position.clamp(-HUB_LIMIT, HUB_LIMIT)
@@ -81,6 +88,53 @@ func _build_ui() -> void:
 	menu_button.size = Vector2(250.0, 46.0)
 	menu_button.pressed.connect(_show_main_menu)
 	hub_ui.add_child(menu_button)
+
+	var item_menu := VBoxContainer.new()
+	item_menu.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	item_menu.position = Vector2(-300.0, 24.0)
+	item_menu.size = Vector2(276.0, 300.0)
+	item_menu.add_theme_constant_override("separation", 8)
+	hub_ui.add_child(item_menu)
+	for button_data in [
+		["ИНВЕНТАРЬ  [I]", &"inventory"],
+		["КУЗНЕЦ", &"blacksmith"],
+		["ЛАВКА БИЖУТЕРИИ", &"jewelry"],
+		["АЛХИМИК", &"alchemist"],
+	]:
+		var item_button := Button.new()
+		item_button.text = String(button_data[0])
+		item_button.custom_minimum_size = Vector2(276.0, 50.0)
+		var target_id := StringName(button_data[1])
+		item_button.pressed.connect(_open_item_window.bind(target_id))
+		item_menu.add_child(item_button)
+
+func _build_item_interfaces() -> void:
+	var session := _session()
+	shop_ui = ShopUI.new()
+	shop_ui.name = "ShopUI"
+	shop_ui.configure(GAME_CONTENT, session.inventory, session.profile, session.shop_service)
+	add_child(shop_ui)
+	inventory_ui = InventoryUI.new()
+	inventory_ui.name = "InventoryUI"
+	inventory_ui.configure(
+		GAME_CONTENT,
+		session.inventory,
+		session.profile,
+		session.shop_service,
+		func() -> bool: return shop_ui == null or not shop_ui.is_open(),
+		false
+	)
+	add_child(inventory_ui)
+
+func _open_item_window(target_id: StringName) -> void:
+	if target_id == &"inventory":
+		if shop_ui != null:
+			shop_ui.close()
+		inventory_ui.open()
+	else:
+		if inventory_ui != null:
+			inventory_ui.close()
+		shop_ui.open_shop(target_id)
 
 func _purchase_health() -> void:
 	if _session().purchase_health_upgrade():

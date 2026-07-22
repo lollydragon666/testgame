@@ -43,6 +43,9 @@ var pending_level_ups := 0
 var current_upgrade_choices: Array[StringName] = []
 var inventory_service: InventoryService
 var loot_service := LootService.new()
+var player_profile: PlayerProfile
+var shop_service: ShopService
+var inventory_ui: InventoryUI
 
 const MAX_UPGRADE_CHOICES := 3
 
@@ -55,6 +58,10 @@ func configure_run_seed(value: int) -> void:
 
 func configure_inventory(service: InventoryService) -> void:
 	inventory_service = service
+
+func configure_economy(profile: PlayerProfile, economy_service: ShopService) -> void:
+	player_profile = profile
+	shop_service = economy_service
 
 func configure_expedition(location_definition: LocationDefinition, tier_definition: ExpeditionTierDefinition, seed_value: int) -> void:
 	expedition_location = location_definition
@@ -137,6 +144,17 @@ func _ready() -> void:
 	inventory_service.consumable_slot_changed.connect(func(_slot: ItemEnums.EquipmentSlot): _refresh_consumable_hud())
 	inventory_service.consumable_cooldown_changed.connect(func(_slot: ItemEnums.EquipmentSlot, _remaining: float, _duration: float): _refresh_consumable_hud())
 	_refresh_consumable_hud()
+	inventory_ui = InventoryUI.new()
+	inventory_ui.name = "InventoryUI"
+	inventory_ui.configure(
+		GAME_CONTENT,
+		inventory_service,
+		player_profile,
+		shop_service,
+		_can_open_inventory,
+		true
+	)
+	add_child(inventory_ui)
 	if auto_start_on_ready:
 		_start_run.call_deferred()
 
@@ -418,12 +436,17 @@ func _refresh_consumable_hud() -> void:
 	if ui != null:
 		ui.set_consumable_slots(inventory_service)
 
+func _can_open_inventory() -> bool:
+	return running and not get_tree().paused
+
 func _on_player_died() -> void:
 	_finish_run(false)
 
 func _finish_run(victory: bool) -> void:
 	if not running:
 		return
+	if inventory_ui != null:
+		inventory_ui.close()
 	running = false
 	pending_level_ups = 0
 	current_upgrade_choices.clear()
@@ -490,6 +513,8 @@ func clear_pickups() -> void:
 	world_state.clear_pickups()
 
 func shutdown() -> void:
+	if inventory_ui != null:
+		inventory_ui.close()
 	running = false
 	pending_level_ups = 0
 	current_upgrade_choices.clear()
