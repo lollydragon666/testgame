@@ -123,7 +123,6 @@ func _validate_affixes() -> void:
 	for ring in [first_ring, second_ring]:
 		var critical_affix := ItemAffixRoll.new()
 		critical_affix.affix_id = &"precise"
-		critical_affix.stat = ItemEnums.ItemStatType.CRITICAL_CHANCE
 		critical_affix.value = 1.0
 		ring.affixes.append(critical_affix)
 		_require(inventory.add_item(ring), "Critical cap test item could not be added")

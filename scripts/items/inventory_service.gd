@@ -65,10 +65,13 @@ func load_serialized(saved_items: Array, saved_equipment: Dictionary, legacy_wea
 		if not item_data is Dictionary:
 			push_warning("Skipping malformed inventory entry")
 			continue
-		var item := ItemInstance.from_dict(item_data)
-		if item == null or game_content.item(item.definition_id) == null or seen_ids.has(item.instance_id):
-			push_warning("Skipping invalid or duplicate inventory item")
+		var item := _deserialize_item(item_data)
+		if item == null:
 			continue
+		if seen_ids.has(item.instance_id):
+			var duplicate_id := item.instance_id
+			item.instance_id = ItemInstance.generate_instance_id()
+			push_warning("Duplicate inventory ID %s was replaced with %s; equipment keeps the first item" % [duplicate_id, item.instance_id])
 		seen_ids[item.instance_id] = true
 		_items.append(item)
 	for slot_key in saved_equipment:
@@ -80,6 +83,80 @@ func load_serialized(saved_items: Array, saved_equipment: Dictionary, legacy_wea
 			if definition != null and definition.accepts_slot(slot as ItemEnums.EquipmentSlot) and not _is_instance_equipped(instance_id):
 				_equipped_items[slot] = instance_id
 	_migrate_starter_weapon(legacy_weapon_id)
+
+func _deserialize_item(data: Dictionary) -> ItemInstance:
+	var definition_id := StringName(String(data.get("definition_id", "")))
+	var definition := game_content.item(definition_id) if game_content != null else null
+	if definition == null:
+		push_warning("Skipping inventory item with an unknown definition: %s" % definition_id)
+		return null
+	var quantity := int(data.get("quantity", 0))
+	var instance_id := String(data.get("instance_id", ""))
+	if instance_id.is_empty() or quantity <= 0 or (not definition.stackable and quantity != 1):
+		push_warning("Skipping inventory item with invalid identity or quantity: %s" % definition_id)
+		return null
+	var legacy_fixed_item := not data.has("rarity") or not data.has("item_level")
+	var rarity_value := int(definition.rarity) if legacy_fixed_item else int(data.get("rarity", -1))
+	var item_level := 1 if legacy_fixed_item else int(data.get("item_level", 0))
+	if rarity_value < ItemEnums.ItemRarity.COMMON or rarity_value > ItemEnums.ItemRarity.LEGENDARY:
+		push_warning("Skipping inventory item with invalid rarity: %s" % definition_id)
+		return null
+	if item_level < ItemFactory.MINIMUM_ITEM_LEVEL or item_level > ItemFactory.MAXIMUM_ITEM_LEVEL:
+		push_warning("Skipping inventory item with invalid item level: %s" % definition_id)
+		return null
+	var item := ItemInstance.new()
+	item.instance_id = instance_id
+	item.definition_id = definition_id
+	item.quantity = quantity
+	item.rarity = rarity_value as ItemEnums.ItemRarity
+	item.item_level = item_level
+	item.generated_seed = int(data.get("generated_seed", 0))
+	var parameters: Variant = data.get("saved_parameters", {})
+	item.saved_parameters = parameters.duplicate(true) if parameters is Dictionary else {}
+	if not legacy_fixed_item:
+		_load_valid_affixes(item, definition, data.get("affixes", []))
+	if not item_factory.validate_item_instance(item):
+		push_warning("Skipping inventory item that failed validation: %s" % definition_id)
+		return null
+	return item
+
+func _load_valid_affixes(item: ItemInstance, definition: ItemDefinition, saved_affixes: Variant) -> void:
+	if not saved_affixes is Array:
+		push_warning("Ignoring malformed affix list on %s" % item.instance_id)
+		return
+	var seen_ids: Dictionary[StringName, bool] = {}
+	var seen_groups: Dictionary[StringName, bool] = {}
+	var maximum_count := item_factory.affix_generator.affix_count_for_rarity(item.rarity)
+	for affix_data in saved_affixes:
+		if item.affixes.size() >= maximum_count:
+			push_warning("Ignoring excess affixes on %s" % item.instance_id)
+			break
+		if not affix_data is Dictionary:
+			push_warning("Ignoring malformed affix on %s" % item.instance_id)
+			continue
+		var affix_id := StringName(String(affix_data.get("affix_id", "")))
+		var value_variant: Variant = affix_data.get("value", null)
+		var affix_definition := game_content.item_affix(affix_id)
+		if affix_definition == null or seen_ids.has(affix_id):
+			push_warning("Ignoring unknown or duplicate affix %s on %s" % [affix_id, item.instance_id])
+			continue
+		if not (value_variant is float or value_variant is int):
+			push_warning("Ignoring non-numeric affix %s on %s" % [affix_id, item.instance_id])
+			continue
+		var value := float(value_variant)
+		if not is_finite(value) or not affix_definition.supports(definition, item.item_level):
+			push_warning("Ignoring incompatible or non-finite affix %s on %s" % [affix_id, item.instance_id])
+			continue
+		if not affix_definition.exclusive_group.is_empty() and seen_groups.has(affix_definition.exclusive_group):
+			push_warning("Ignoring repeated affix group %s on %s" % [affix_definition.exclusive_group, item.instance_id])
+			continue
+		var roll := ItemAffixRoll.new()
+		roll.affix_id = affix_id
+		roll.value = value
+		item.affixes.append(roll)
+		seen_ids[affix_id] = true
+		if not affix_definition.exclusive_group.is_empty():
+			seen_groups[affix_definition.exclusive_group] = true
 
 func _migrate_starter_weapon(legacy_weapon_id: StringName) -> void:
 	var requested_weapon := legacy_weapon_id if not legacy_weapon_id.is_empty() and game_content.weapon(legacy_weapon_id) != null else STARTER_WEAPON_ID
@@ -104,7 +181,9 @@ func add_item(item: ItemInstance) -> bool:
 		return false
 	if not definition.stackable:
 		for index in item.quantity:
-			var added := item if index == 0 else ItemInstance.create(item.definition_id, 1, item.rarity)
+			var added := item if index == 0 else item.duplicate_instance()
+			if index > 0:
+				added.instance_id = ItemInstance.generate_instance_id()
 			added.quantity = 1
 			_items.append(added)
 			item_added.emit(added.instance_id)
@@ -145,6 +224,8 @@ func _add_stackable(item: ItemInstance, definition: ItemDefinition) -> void:
 		var stack := item if remaining == item.quantity else ItemInstance.create(item.definition_id, stack_quantity, item.rarity)
 		stack.quantity = stack_quantity
 		stack.affixes = item.affixes.duplicate()
+		stack.item_level = item.item_level
+		stack.generated_seed = item.generated_seed
 		_items.append(stack)
 		item_added.emit(stack.instance_id)
 		remaining -= stack_quantity
@@ -154,6 +235,7 @@ func _can_stack(first: ItemInstance, second: ItemInstance, definition: ItemDefin
 		definition.stackable
 		and first.definition_id == second.definition_id
 		and first.rarity == second.rarity
+		and first.item_level == second.item_level
 		and first.quantity < definition.max_stack
 		and JSON.stringify(first.to_dict().get("affixes", [])) == JSON.stringify(second.to_dict().get("affixes", []))
 	)

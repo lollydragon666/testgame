@@ -32,7 +32,5 @@ func roll(rng: RandomNumberGenerator, item_level := 1) -> ItemAffixRoll:
 	var limits := value_range(item_level)
 	var result := ItemAffixRoll.new()
 	result.affix_id = id
-	result.stat = stat_type
 	result.value = snappedf(rng.randf_range(limits.x, limits.y), pow(10.0, -decimals))
-	result.is_percentage = percentage
 	return result

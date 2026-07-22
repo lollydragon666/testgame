@@ -67,8 +67,8 @@ static func from_dict(data: Dictionary) -> ItemInstance:
 	item.instance_id = saved_id
 	item.definition_id = StringName(definition_text)
 	item.quantity = saved_quantity
-	item.rarity = clampi(int(data.get("rarity", ItemEnums.ItemRarity.COMMON)), ItemEnums.ItemRarity.COMMON, ItemEnums.ItemRarity.LEGENDARY) as ItemEnums.ItemRarity
-	item.item_level = clampi(int(data.get("item_level", 1)), 1, 30)
+	item.rarity = int(data.get("rarity", ItemEnums.ItemRarity.COMMON)) as ItemEnums.ItemRarity
+	item.item_level = int(data.get("item_level", 1))
 	item.generated_seed = int(data.get("generated_seed", 0))
 	for affix_data in data.get("affixes", []):
 		if affix_data is Dictionary:
