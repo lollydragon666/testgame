@@ -1,5 +1,8 @@
 extends Node
 
+signal run_succeeded(run_id: String)
+signal run_rewards_committed(run_id: String, item_count: int)
+
 enum Mode {
 	MENU,
 	HUB,
@@ -16,12 +19,14 @@ var profile := PlayerProfile.new()
 var inventory := InventoryService.new()
 var run_inventory := RunInventoryService.new()
 var run_context := RunContext.new()
+var pending_run_rewards := PendingRunRewards.new()
 var shop_service := ShopService.new()
 var selected_location_id: StringName = &"test_location"
 var selected_location_tier := 1
 var current_run_seed := 0
 var last_expedition_result: ExpeditionResult
 var current_mode := Mode.MENU
+var _auto_save_suspended := false
 
 func _ready() -> void:
 	load_profile()
@@ -32,6 +37,8 @@ func _configure_inventory() -> void:
 	inventory = InventoryService.new()
 	inventory.configure(GAME_CONTENT)
 	inventory.load_serialized(profile.inventory_items, profile.equipped_items, profile.selected_weapon_definition_id)
+	pending_run_rewards = PendingRunRewards.new()
+	pending_run_rewards.configure(GAME_CONTENT, inventory, profile, profile.pending_run_rewards, save_profile)
 	inventory.inventory_changed.connect(_on_inventory_changed)
 	inventory.equipment_changed.connect(_on_inventory_changed)
 	shop_service = ShopService.new()
@@ -40,7 +47,8 @@ func _configure_inventory() -> void:
 
 func _on_inventory_changed() -> void:
 	_sync_inventory_profile()
-	save_profile()
+	if not _auto_save_suspended:
+		save_profile()
 
 func _sync_inventory_profile() -> void:
 	profile.inventory_items = inventory.serialized_items()
@@ -48,6 +56,7 @@ func _sync_inventory_profile() -> void:
 	var weapon_id := String(profile.equipped_items.get(String.num_int64(ItemEnums.EquipmentSlot.WEAPON), ""))
 	var weapon := inventory.permanent_item(weapon_id)
 	profile.selected_weapon_definition_id = weapon.definition_id if weapon != null else &""
+	profile.pending_run_rewards = pending_run_rewards.serialized_items()
 	profile.save_version = PlayerProfile.SAVE_VERSION
 
 func save_profile(path := SAVE_PATH) -> bool:
@@ -165,6 +174,59 @@ func claim_expedition_result(result: ExpeditionResult) -> bool:
 	last_expedition_result = result
 	save_profile()
 	return true
+
+func complete_run_successfully() -> bool:
+	if run_context.state != RunContext.RunState.ACTIVE or run_context.rewards_committed:
+		return false
+	var run_items := run_inventory.get_items()
+	for item in run_items:
+		if item == null or item.instance_id.is_empty() or GAME_CONTENT.item(item.definition_id) == null:
+			return false
+	var previous_items := inventory.serialized_items()
+	var previous_equipment := inventory.serialized_equipment()
+	var previous_runtime_equipment := inventory.runtime_equipment_snapshot()
+	var previous_pending := pending_run_rewards.serialized_items()
+	run_context.state = RunContext.RunState.SUCCESS_PENDING
+	var pending_count := 0
+	_auto_save_suspended = true
+	inventory.begin_transaction()
+	for item in run_items:
+		if not inventory.add_item_preserving_identity(item):
+			if not pending_run_rewards.add_item(item):
+				inventory.end_transaction()
+				_rollback_reward_transfer(previous_items, previous_equipment, previous_runtime_equipment, previous_pending)
+				_auto_save_suspended = false
+				run_context.state = RunContext.RunState.ACTIVE
+				return false
+			pending_count += 1
+	inventory.end_transaction()
+	var saved := save_profile()
+	_auto_save_suspended = false
+	if not saved:
+		_rollback_reward_transfer(previous_items, previous_equipment, previous_runtime_equipment, previous_pending)
+		run_context.state = RunContext.RunState.ACTIVE
+		return false
+	run_context.rewards_committed = true
+	run_context.committed_item_count = run_items.size()
+	run_context.pending_item_count = pending_count
+	run_context.completed_at_unix = int(Time.get_unix_time_from_system())
+	run_context.state = RunContext.RunState.COMPLETED
+	run_inventory.clear()
+	inventory.detach_run_inventory()
+	run_succeeded.emit(run_context.run_id)
+	run_rewards_committed.emit(run_context.run_id, run_items.size())
+	return true
+
+func _rollback_reward_transfer(
+	items: Array[Dictionary],
+	equipment: Dictionary,
+	runtime_equipment: Dictionary,
+	pending: Array[Dictionary]
+) -> void:
+	inventory.load_serialized(items, equipment, profile.selected_weapon_definition_id)
+	pending_run_rewards.configure(GAME_CONTENT, inventory, profile, pending, save_profile)
+	inventory.attach_run_inventory(run_inventory, run_context.starting_equipment)
+	inventory.restore_runtime_equipment(runtime_equipment)
 
 func purchase_health_upgrade() -> bool:
 	if profile.gold < HEALTH_UPGRADE_COST:

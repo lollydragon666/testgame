@@ -221,6 +221,26 @@ func add_item(item: ItemInstance) -> bool:
 	_emit_inventory_changed()
 	return true
 
+## Victory transfer keeps the exact loot instance even for stackable items.
+func add_item_preserving_identity(item: ItemInstance) -> bool:
+	if not can_add_preserving_identity(item):
+		return false
+	_items.append(item)
+	item_added.emit(item.instance_id)
+	_emit_inventory_changed()
+	return true
+
+func can_add_preserving_identity(item: ItemInstance) -> bool:
+	return (
+		item != null
+		and game_content != null
+		and not item.instance_id.is_empty()
+		and item.quantity > 0
+		and game_content.item(item.definition_id) != null
+		and _find_permanent_item(item.instance_id) == null
+		and _items.size() < CAPACITY
+	)
+
 func can_add_item(item: ItemInstance) -> bool:
 	if item == null or item.quantity <= 0 or game_content == null:
 		return false
@@ -391,6 +411,18 @@ func serialized_equipment() -> Dictionary:
 			instance_id = starting_id if _find_permanent_item(starting_id) != null else ""
 		result[key] = instance_id
 	return result
+
+func runtime_equipment_snapshot() -> Dictionary:
+	return _equipped_items.duplicate(true)
+
+func restore_runtime_equipment(snapshot: Dictionary) -> void:
+	_reset_equipment()
+	for slot_key in snapshot:
+		var slot := int(slot_key)
+		var instance_id := String(snapshot[slot_key])
+		if _equipped_items.has(slot) and (instance_id.is_empty() or find_item(instance_id) != null):
+			_equipped_items[slot] = instance_id
+	equipment_changed.emit()
 
 func inventory_size() -> int:
 	return _items.size() + (_run_inventory.item_count() if _run_inventory != null else 0)

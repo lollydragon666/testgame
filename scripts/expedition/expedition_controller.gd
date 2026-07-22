@@ -20,6 +20,13 @@ func _ready() -> void:
 		push_error(startup_error)
 		_show_startup_error()
 		return
+	# Direct scene/test entry still receives a real run context; normal routing has
+	# already created it in GameSession.begin_expedition().
+	if not _session().run_context.is_active() and not _session().start_new_run():
+		startup_error = "Не удалось создать контекст вылазки"
+		push_error(startup_error)
+		_show_startup_error()
+		return
 	combat = COMBAT_SCENE.instantiate() as GameMain
 	combat.name = "Combat"
 	combat.configure_mode(CombatModeConfig.expedition(), true)
@@ -102,6 +109,9 @@ func _on_run_finished(victory: bool) -> void:
 		return
 	var reward := 0
 	if victory:
+		if not _session().complete_run_successfully():
+			push_error("Failed to commit expedition run loot")
+			return
 		reward = _session().profile.calculate_tier_reward(location_definition, tier_definition.tier)
 		if not _session().profile.register_location_victory(location_definition, tier_definition.tier):
 			push_error("Failed to register expedition victory")
@@ -125,6 +135,11 @@ func _on_run_finished(victory: bool) -> void:
 		result.defeated_elites,
 		result.duration_seconds,
 	]
+	if victory:
+		details += "\n\nДОБЫЧА СОХРАНЕНА: %d\nВ ОЖИДАНИИ МЕСТА: %d" % [
+			_session().run_context.committed_item_count,
+			_session().run_context.pending_item_count,
+		]
 	combat.ui.show_game_over(victory, "ВЕРНУТЬСЯ В ХАБ", details)
 
 func _return_to_hub() -> void:

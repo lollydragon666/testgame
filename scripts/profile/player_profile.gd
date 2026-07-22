@@ -1,7 +1,7 @@
 class_name PlayerProfile
 extends Resource
 
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 @export var gold := 0:
 	set(value):
@@ -15,6 +15,7 @@ const SAVE_VERSION := 2
 @export var inventory_items: Array[Dictionary] = []
 @export var equipped_items: Dictionary = {}
 @export var selected_weapon_definition_id: StringName = &""
+@export var pending_run_rewards: Array[Dictionary] = []
 
 func _init() -> void:
 	ensure_location_progress(&"test_location")
@@ -91,6 +92,7 @@ func to_dict() -> Dictionary:
 		"inventory_items": inventory_items.duplicate(true),
 		"equipped_items": equipped_items.duplicate(true),
 		"selected_weapon_definition_id": String(selected_weapon_definition_id),
+		"pending_run_rewards": pending_run_rewards.duplicate(true),
 	}
 
 func load_dict(data: Dictionary) -> void:
@@ -126,6 +128,10 @@ func load_dict(data: Dictionary) -> void:
 	var saved_equipment: Variant = data.get("equipped_items", {})
 	equipped_items = saved_equipment.duplicate(true) if saved_equipment is Dictionary else {}
 	selected_weapon_definition_id = StringName(String(data.get("selected_weapon_definition_id", data.get("selected_weapon_id", ""))))
+	pending_run_rewards = []
+	for item_data in data.get("pending_run_rewards", []):
+		if item_data is Dictionary:
+			pending_run_rewards.append(item_data.duplicate(true))
 
 # TODO(save): добавить версию формата, путь user://, атомарную запись и
 # восстановление после повреждения файла. Debug-состояние sandbox сюда не входит.

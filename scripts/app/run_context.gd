@@ -25,6 +25,8 @@ var starting_equipment: Dictionary = {}
 var starting_quick_slots: Dictionary = {}
 var rewards_committed := false
 var failure_processed := false
+var committed_item_count := 0
+var pending_item_count := 0
 
 static func create(equipment: Dictionary) -> RunContext:
 	var context := RunContext.new()

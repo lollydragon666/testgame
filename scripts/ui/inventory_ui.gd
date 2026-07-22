@@ -17,6 +17,7 @@ var profile: PlayerProfile
 var shop_service: ShopService
 var can_open_callback: Callable
 var pause_game_when_open := false
+var pending_rewards: PendingRunRewards
 var selected_instance_id := ""
 var selected_filter := -1
 var _paused_by_window := false
@@ -35,7 +36,8 @@ func configure(
 	player_profile: PlayerProfile = null,
 	economy_service: ShopService = null,
 	open_guard := Callable(),
-	pause_game := false
+	pause_game := false,
+	pending_storage: PendingRunRewards = null
 ) -> void:
 	game_content = content
 	inventory = inventory_service
@@ -43,6 +45,7 @@ func configure(
 	shop_service = economy_service
 	can_open_callback = open_guard
 	pause_game_when_open = pause_game
+	pending_rewards = pending_storage
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -54,6 +57,8 @@ func _ready() -> void:
 		inventory.consumable_slot_changed.connect(func(_slot: ItemEnums.EquipmentSlot): _refresh())
 	if shop_service != null:
 		shop_service.currency_changed.connect(func(_gold: int): _refresh())
+	if pending_rewards != null:
+		pending_rewards.rewards_changed.connect(_refresh)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_inventory"):
@@ -171,7 +176,7 @@ func _build_interface() -> void:
 func _refresh() -> void:
 	if overlay == null or inventory == null:
 		return
-	if not selected_instance_id.is_empty() and inventory.find_item(selected_instance_id) == null:
+	if not selected_instance_id.is_empty() and inventory.find_item(selected_instance_id) == null and (pending_rewards == null or pending_rewards.find_item(selected_instance_id) == null):
 		selected_instance_id = ""
 	gold_label.text = "ЗОЛОТО: %d" % (profile.gold if profile != null else 0)
 	capacity_label.text = "ПОСТОЯННЫЕ: %d / %d · ДОБЫЧА: %d / %d" % [
@@ -187,6 +192,8 @@ func _refresh() -> void:
 func _rebuild_item_grid() -> void:
 	_clear_children(item_grid)
 	var items := inventory.get_items()
+	if pending_rewards != null:
+		items.append_array(pending_rewards.get_items())
 	items.sort_custom(func(first: ItemInstance, second: ItemInstance) -> bool:
 		var first_definition := game_content.item(first.definition_id)
 		var second_definition := game_content.item(second.definition_id)
@@ -199,7 +206,7 @@ func _rebuild_item_grid() -> void:
 		var selected_marker := "◆ " if item.instance_id == selected_instance_id else ""
 		var quantity_text := " ×%d" % item.quantity if item.quantity > 1 else ""
 		var equipped_text := "\n[НАДЕТО]" if inventory.is_equipped(item.instance_id) else ""
-		var source_text := "\n[ДОБЫЧА ЗАБЕГА]" if inventory.is_run_item(item.instance_id) else ""
+		var source_text := "\n[ОЖИДАЕТ РАЗБОРА]" if pending_rewards != null and pending_rewards.find_item(item.instance_id) != null else ("\n[ДОБЫЧА ЗАБЕГА]" if inventory.is_run_item(item.instance_id) else "")
 		var item_button := _button("%s%s\n%s · ур. %d%s%s%s" % [
 			selected_marker,
 			ItemRarityPresentation.display_name(item, definition),
@@ -237,6 +244,8 @@ func _rebuild_equipment() -> void:
 func _rebuild_details() -> void:
 	_clear_children(action_box)
 	var item := inventory.find_item(selected_instance_id)
+	if item == null and pending_rewards != null:
+		item = pending_rewards.find_item(selected_instance_id)
 	var definition := game_content.item(item.definition_id) if item != null else null
 	if item == null or definition == null:
 		details_label.text = "[color=#8f7c61]Выберите предмет, чтобы увидеть его свойства.[/color]"
@@ -247,7 +256,7 @@ func _rebuild_details() -> void:
 		"[color=#%s]%s[/color] · %s" % [rarity_color, ItemRarityPresentation.rarity_name(item.rarity), ItemEnums.item_type_name(definition.item_type)],
 		"Уровень предмета: %d" % item.item_level,
 		"Количество: %d" % item.quantity,
-		"[color=#d49a3a]ВРЕМЕННАЯ ДОБЫЧА ЗАБЕГА[/color]" if inventory.is_run_item(item.instance_id) else "[color=#8f7c61]ПОСТОЯННЫЙ ПРЕДМЕТ[/color]",
+		_item_source_text(item.instance_id),
 		"",
 		definition.description,
 	]
@@ -268,6 +277,11 @@ func _rebuild_details() -> void:
 	_build_actions(item, definition)
 
 func _build_actions(item: ItemInstance, definition: ItemDefinition) -> void:
+	if pending_rewards != null and pending_rewards.find_item(item.instance_id) != null:
+		_add_action("ЗАБРАТЬ", _claim_pending_selected)
+		_add_action("ПРОДАТЬ", _sell_pending_selected)
+		_add_action("УДАЛИТЬ", _discard_pending_selected)
+		return
 	if inventory.is_equipped(item.instance_id):
 		_add_action("СНЯТЬ", _unequip_selected)
 	elif definition.equipment_slot == ItemEnums.EquipmentSlot.RING:
@@ -332,6 +346,27 @@ func _assign_consumable(slot: ItemEnums.EquipmentSlot) -> void:
 func _sell_selected() -> void:
 	if shop_service != null and shop_service.sell_item(selected_instance_id, 1):
 		_refresh()
+
+func _claim_pending_selected() -> void:
+	if pending_rewards != null and pending_rewards.claim_item(selected_instance_id):
+		_refresh()
+
+func _sell_pending_selected() -> void:
+	if pending_rewards != null and pending_rewards.sell_item(selected_instance_id):
+		selected_instance_id = ""
+		_refresh()
+
+func _discard_pending_selected() -> void:
+	if pending_rewards != null and pending_rewards.discard_item(selected_instance_id):
+		selected_instance_id = ""
+		_refresh()
+
+func _item_source_text(instance_id: String) -> String:
+	if pending_rewards != null and pending_rewards.find_item(instance_id) != null:
+		return "[color=#d49a3a]ЭВАКУИРОВАНО · ОЖИДАЕТ РАЗБОРА[/color]"
+	if inventory.is_run_item(instance_id):
+		return "[color=#d49a3a]ВРЕМЕННАЯ ДОБЫЧА ЗАБЕГА[/color]"
+	return "[color=#8f7c61]ПОСТОЯННЫЙ ПРЕДМЕТ[/color]"
 
 func _equipped_slot_for(instance_id: String) -> ItemEnums.EquipmentSlot:
 	for slot in EQUIPMENT_SLOTS:

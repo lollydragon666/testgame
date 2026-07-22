@@ -122,7 +122,8 @@ func _build_item_interfaces() -> void:
 		session.profile,
 		session.shop_service,
 		func() -> bool: return shop_ui == null or not shop_ui.is_open(),
-		false
+		false,
+		session.pending_run_rewards
 	)
 	add_child(inventory_ui)
 
