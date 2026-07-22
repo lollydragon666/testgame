@@ -369,4 +369,7 @@ func _button(text: String) -> Button:
 
 func _clear_children(node: Node) -> void:
 	for child in node.get_children():
-		child.free()
+		# A button may request this rebuild from its own `pressed` signal. Detach it
+		# immediately, but defer destruction until Godot finishes emitting the signal.
+		node.remove_child(child)
+		child.queue_free()

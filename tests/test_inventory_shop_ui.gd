@@ -39,7 +39,10 @@ func _run() -> void:
 	var armor: ItemInstance
 	for item in inventory.get_items():
 		if item.definition_id == &"cloth_armor": armor = item
-	inventory_ui._select_item(armor.instance_id)
+	var armor_button := inventory_ui.item_grid.get_child(0) as Button
+	_require(armor_button != null, "Armor item button is missing")
+	armor_button.pressed.emit()
+	_require(armor_button.is_queued_for_deletion(), "Pressed inventory button was not safely queued for deletion")
 	_require(inventory_ui.details_label.text.contains("Стёганая броня"), "Item detail panel did not update")
 	_require(inventory_ui.action_box.get_child_count() > 0, "Item actions were not created")
 	inventory_ui._equip_selected()

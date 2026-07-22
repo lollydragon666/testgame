@@ -272,4 +272,7 @@ func _button(text: String) -> Button:
 
 func _clear_children(node: Node) -> void:
 	for child in node.get_children():
-		child.free()
+		# Shop filters and stock buttons can rebuild their own container while they
+		# are emitting `pressed`, so immediate `free()` would target a locked object.
+		node.remove_child(child)
+		child.queue_free()
