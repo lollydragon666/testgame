@@ -8,6 +8,7 @@ extends Resource
 @export var waves: Array[WaveDefinition] = []
 @export var props: Array[PropDefinition] = []
 @export var locations: Array[LocationDefinition] = []
+@export var item_catalog: ItemCatalog
 
 func enemy(id: StringName) -> EnemyDefinition:
 	for definition in enemies:
@@ -25,7 +26,16 @@ func weapon(id: StringName) -> WeaponDefinition:
 	for definition in weapons:
 		if definition.id == id:
 			return definition
+	var item_definition := item(id)
+	if item_definition is WeaponDefinition:
+		return item_definition as WeaponDefinition
 	return null
+
+func item(id: StringName) -> ItemDefinition:
+	return item_catalog.definition(id) if item_catalog != null else null
+
+func all_items() -> Array[ItemDefinition]:
+	return item_catalog.definitions.duplicate() if item_catalog != null else []
 
 func upgrade(id: StringName) -> UpgradeDefinition:
 	for definition in upgrades:

@@ -1,7 +1,7 @@
 class_name WeaponDefinition
-extends Resource
+extends ItemDefinition
 
-@export var id: StringName = &"player_sword"
+@export var weapon_class: StringName = ItemEnums.SWORD_CLASS
 @export var max_tier := 6
 @export var base_damage := 34.0
 @export var damage_per_tier := 2.0
@@ -14,3 +14,9 @@ extends Resource
 @export var swing_duration := 0.28
 @export var final_tier_bonus_reach := 8.0
 @export var final_tier_bonus_damage := 2.0
+
+func _init() -> void:
+	item_type = ItemEnums.ItemType.WEAPON
+	equipment_slot = ItemEnums.EquipmentSlot.WEAPON
+	stackable = false
+	max_stack = 1

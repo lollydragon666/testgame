@@ -1,0 +1,272 @@
+[gd_resource type="Resource" script_class="ItemCatalog" load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/content/weapon_definition.gd" id="2_weapon"]
+[ext_resource type="Resource" path="res://resources/content/weapons/player_sword.tres" id="3_training"]
+
+[sub_resource type="Resource" id="Weapon_old_gladius"]
+script = ExtResource("2_weapon")
+id = &"old_gladius"
+display_name = "Старый гладиус"
+description = "Надёжный короткий меч, переживший не одного владельца."
+item_type = 0
+equipment_slot = 1
+rarity = 0
+base_price = 100
+sell_price = 35
+visual_style = &"gladius"
+sort_order = 2
+minimum_wave = 1
+base_damage = 36.0
+base_attack_reach = 93.0
+base_visual_length = 93.0
+
+[sub_resource type="Resource" id="Weapon_iron_sabre"]
+script = ExtResource("2_weapon")
+id = &"iron_sabre"
+display_name = "Железная сабля"
+description = "Быстрая сабля из простого железа."
+item_type = 0
+equipment_slot = 1
+rarity = 0
+base_price = 300
+sell_price = 105
+visual_style = &"sabre"
+sort_order = 3
+minimum_wave = 1
+base_damage = 40.0
+base_attack_reach = 96.0
+base_visual_length = 96.0
+cooldown = 0.34
+
+[sub_resource type="Resource" id="Weapon_mercenary_blade"]
+script = ExtResource("2_weapon")
+id = &"mercenary_blade"
+display_name = "Клинок наёмника"
+description = "Сбалансированный меч для долгих походов."
+item_type = 0
+equipment_slot = 1
+rarity = 1
+base_price = 650
+sell_price = 227
+visual_style = &"mercenary"
+sort_order = 4
+minimum_wave = 2
+base_damage = 45.0
+base_attack_reach = 99.0
+attack_half_width = 8.0
+base_visual_length = 99.0
+cooldown = 0.34
+
+[sub_resource type="Resource" id="Weapon_falchion"]
+script = ExtResource("2_weapon")
+id = &"falchion"
+display_name = "Фальшион"
+description = "Тяжёлый рубящий клинок с широкой режущей кромкой."
+item_type = 0
+equipment_slot = 1
+rarity = 1
+base_price = 1100
+sell_price = 385
+visual_style = &"falchion"
+sort_order = 5
+minimum_wave = 3
+base_damage = 52.0
+base_attack_reach = 102.0
+attack_half_width = 9.0
+base_visual_length = 102.0
+cooldown = 0.38
+
+[sub_resource type="Resource" id="Weapon_knight_bastard_sword"]
+script = ExtResource("2_weapon")
+id = &"knight_bastard_sword"
+display_name = "Рыцарский полуторник"
+description = "Длинный клинок с прочной крестовиной."
+item_type = 0
+equipment_slot = 1
+rarity = 1
+base_price = 1800
+sell_price = 630
+visual_style = &"bastard"
+sort_order = 6
+minimum_wave = 4
+base_damage = 58.0
+base_attack_reach = 111.0
+attack_half_width = 10.0
+base_visual_length = 111.0
+cooldown = 0.40
+
+[sub_resource type="Resource" id="Weapon_duelist_rapier"]
+script = ExtResource("2_weapon")
+id = &"duelist_rapier"
+display_name = "Рапира дуэлянта"
+description = "Узкий и быстрый клинок для точных ударов."
+item_type = 0
+equipment_slot = 1
+rarity = 2
+base_price = 2600
+sell_price = 910
+visual_style = &"rapier"
+sort_order = 7
+minimum_wave = 4
+base_damage = 51.0
+base_attack_reach = 115.0
+attack_half_width = 6.0
+base_visual_length = 115.0
+cooldown = 0.25
+
+[sub_resource type="Resource" id="Weapon_northern_cleaver"]
+script = ExtResource("2_weapon")
+id = &"northern_cleaver"
+display_name = "Северный тесак"
+description = "Широкий северный клинок с разрушительным замахом."
+item_type = 0
+equipment_slot = 1
+rarity = 2
+base_price = 3600
+sell_price = 1260
+visual_style = &"cleaver"
+sort_order = 8
+minimum_wave = 5
+base_damage = 66.0
+base_attack_reach = 105.0
+attack_half_width = 11.0
+base_visual_length = 105.0
+cooldown = 0.42
+
+[sub_resource type="Resource" id="Weapon_royal_sword"]
+script = ExtResource("2_weapon")
+id = &"royal_sword"
+display_name = "Королевский меч"
+description = "Благородное оружие королевской гвардии."
+item_type = 0
+equipment_slot = 1
+rarity = 2
+base_price = 5000
+sell_price = 1750
+visual_style = &"royal"
+sort_order = 9
+minimum_wave = 6
+base_damage = 72.0
+base_attack_reach = 115.0
+attack_half_width = 9.0
+base_visual_length = 115.0
+cooldown = 0.34
+
+[sub_resource type="Resource" id="Weapon_executioner_blade"]
+script = ExtResource("2_weapon")
+id = &"executioner_blade"
+display_name = "Клинок палача"
+description = "Массивный меч, созданный для одного тяжёлого удара."
+item_type = 0
+equipment_slot = 1
+rarity = 2
+base_price = 7000
+sell_price = 2450
+visual_style = &"executioner"
+sort_order = 10
+minimum_wave = 7
+base_damage = 86.0
+base_attack_reach = 120.0
+attack_half_width = 13.0
+base_visual_length = 120.0
+cooldown = 0.48
+
+[sub_resource type="Resource" id="Weapon_storm_sabre"]
+script = ExtResource("2_weapon")
+id = &"storm_sabre"
+display_name = "Сабля бури"
+description = "Лёгкая сабля, будто подталкиваемая ветром."
+item_type = 0
+equipment_slot = 1
+rarity = 3
+base_price = 9000
+sell_price = 3150
+visual_style = &"storm"
+sort_order = 11
+minimum_wave = 8
+base_damage = 78.0
+base_attack_reach = 118.0
+attack_half_width = 8.0
+base_visual_length = 118.0
+cooldown = 0.25
+
+[sub_resource type="Resource" id="Weapon_dragon_fang"]
+script = ExtResource("2_weapon")
+id = &"dragon_fang"
+display_name = "Клык дракона"
+description = "Клинок из материала, похожего на драконий клык."
+item_type = 0
+equipment_slot = 1
+rarity = 3
+base_price = 12000
+sell_price = 4200
+visual_style = &"dragon"
+sort_order = 12
+minimum_wave = 9
+base_damage = 96.0
+base_attack_reach = 125.0
+attack_half_width = 10.0
+base_visual_length = 125.0
+cooldown = 0.32
+
+[sub_resource type="Resource" id="Weapon_void_edge"]
+script = ExtResource("2_weapon")
+id = &"void_edge"
+display_name = "Грань пустоты"
+description = "Тёмный клинок, кромка которого поглощает свет."
+item_type = 0
+equipment_slot = 1
+rarity = 3
+base_price = 16000
+sell_price = 5600
+visual_style = &"void"
+sort_order = 13
+minimum_wave = 10
+base_damage = 108.0
+base_attack_reach = 130.0
+attack_half_width = 11.0
+base_visual_length = 130.0
+cooldown = 0.30
+
+[sub_resource type="Resource" id="Weapon_titan_greatsword"]
+script = ExtResource("2_weapon")
+id = &"titan_greatsword"
+display_name = "Двуручник титана"
+description = "Гигантский меч, требующий чудовищной силы."
+item_type = 0
+equipment_slot = 1
+rarity = 4
+base_price = 22000
+sell_price = 7700
+visual_style = &"titan"
+sort_order = 14
+minimum_wave = 12
+base_damage = 132.0
+base_attack_reach = 145.0
+attack_half_width = 15.0
+base_visual_length = 145.0
+cooldown = 0.55
+
+[sub_resource type="Resource" id="Weapon_sunforged_blade"]
+script = ExtResource("2_weapon")
+id = &"sunforged_blade"
+display_name = "Солнцекованный клинок"
+description = "Легендарный клинок, сияющий золотым пламенем."
+item_type = 0
+equipment_slot = 1
+rarity = 4
+base_price = 30000
+sell_price = 10500
+visual_style = &"sunforged"
+sort_order = 15
+minimum_wave = 13
+base_damage = 145.0
+base_attack_reach = 140.0
+attack_half_width = 13.0
+base_visual_length = 140.0
+cooldown = 0.33
+
+[resource]
+script = ExtResource("1_catalog")
+definitions = Array[ItemDefinition]([ExtResource("3_training"), SubResource("Weapon_old_gladius"), SubResource("Weapon_iron_sabre"), SubResource("Weapon_mercenary_blade"), SubResource("Weapon_falchion"), SubResource("Weapon_knight_bastard_sword"), SubResource("Weapon_duelist_rapier"), SubResource("Weapon_northern_cleaver"), SubResource("Weapon_royal_sword"), SubResource("Weapon_executioner_blade"), SubResource("Weapon_storm_sabre"), SubResource("Weapon_dragon_fang"), SubResource("Weapon_void_edge"), SubResource("Weapon_titan_greatsword"), SubResource("Weapon_sunforged_blade")])
