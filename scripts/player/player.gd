@@ -95,6 +95,8 @@ func set_combat_registry(state: WorldState) -> void:
 func set_gameplay_active(active: bool) -> void:
 	if not active:
 		_cancel_dash()
+		if attack != null:
+			attack.clear_input_buffer()
 	process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
 
 func _physics_process(delta: float) -> void:
@@ -223,6 +225,7 @@ func take_damage(amount: float) -> void:
 	refresh_visual()
 	if health <= 0.0:
 		is_alive = false
+		attack.clear_input_buffer()
 		died.emit()
 
 func heal(amount: float) -> void:

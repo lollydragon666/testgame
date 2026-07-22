@@ -6,6 +6,7 @@ signal attack_started
 const SWEEP_START := -1.22
 const SWEEP_END := 1.04
 const MAX_SWORD_TIER := 6
+const ATTACK_BUFFER_TIME := 0.12
 
 ## Урон одного замаха мечом.
 @export var damage := 34.0
@@ -36,6 +37,7 @@ var host: PlayerHero
 var world_state: WorldState
 var attack_shape := AttackShape.new()
 var definition: WeaponDefinition
+var attack_buffer_remaining := 0.0
 var _enemy_query_buffer: Array[EnemyBase] = []
 var _projectile_query_buffer: Array[DeflectableProjectile] = []
 var _destructible_query_buffer: Array[WorldProp] = []
@@ -50,6 +52,12 @@ func set_world_state(state: WorldState) -> void:
 
 func _physics_process(delta: float) -> void:
 	cooldown = maxf(0.0, cooldown - delta)
+	if host == null or not host.is_alive:
+		clear_input_buffer()
+	else:
+		attack_buffer_remaining = maxf(0.0, attack_buffer_remaining - delta)
+		if attack_buffer_remaining > 0.0 and cooldown <= 0.0:
+			_start_attack()
 	if swing_time > 0.0:
 		swing_time = maxf(0.0, swing_time - delta)
 		var current_offset := swing_offset() if swing_time > 0.0 else swing_end_offset()
@@ -58,9 +66,19 @@ func _physics_process(delta: float) -> void:
 		if host != null:
 			host.refresh_visual()
 
-func try_attack() -> void:
-	if host == null or world_state == null or cooldown > 0.0 or not host.is_alive:
-		return
+func try_attack() -> bool:
+	if host == null or world_state == null or not host.is_alive:
+		clear_input_buffer()
+		return false
+	if cooldown > 0.0:
+		attack_buffer_remaining = ATTACK_BUFFER_TIME
+		return false
+	_start_attack()
+	return true
+
+
+func _start_attack() -> void:
+	attack_buffer_remaining = 0.0
 	cooldown = effective_cooldown_duration()
 	swing_time = swing_duration
 	swing_direction = next_swing_direction
@@ -71,6 +89,10 @@ func try_attack() -> void:
 	attack_started.emit()
 	_hit_groups_between(previous_swing_offset, previous_swing_offset)
 	host.refresh_visual()
+
+
+func clear_input_buffer() -> void:
+	attack_buffer_remaining = 0.0
 
 func _hit_groups_between(from_offset: float, to_offset: float) -> void:
 	# Проверяется пройденный за кадр участок дуги, а не только текущая позиция меча.
@@ -190,6 +212,7 @@ func effective_cooldown_duration() -> float:
 	return maxf(0.14, cooldown_duration * haste_multiplier)
 
 func reset() -> void:
+	clear_input_buffer()
 	if definition == null:
 		return
 	damage = definition.base_damage
