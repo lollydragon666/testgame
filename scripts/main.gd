@@ -125,6 +125,7 @@ func _ready() -> void:
 	enemy_spawner.configure(GAME_CONTENT, WORLD_CONFIG, world_state, player, world_root)
 	enemy_spawner.enemy_died.connect(_on_enemy_died)
 	enemy_spawner.projectile_requested.connect(_spawn_projectile)
+	enemy_spawner.arrow_requested.connect(_spawn_arrow)
 	enemy_spawner.spell_requested.connect(_spawn_enemy_spell)
 	add_child(enemy_spawner)
 
@@ -241,6 +242,14 @@ func _spawn_projectile(origin: Vector2, direction: Vector2, damage: float) -> vo
 	projectile.setup(player, origin, direction, damage)
 	_register_enemy_projectile(projectile)
 	projectiles_root.add_child(projectile)
+
+func _spawn_arrow(origin: Vector2, direction: Vector2, damage: float) -> void:
+	if not running or not world_state.can_spawn_enemy_projectile(WORLD_CONFIG):
+		return
+	var arrow := EnemyArrow.new()
+	arrow.setup(player, origin, direction, damage)
+	_register_enemy_projectile(arrow)
+	projectiles_root.add_child(arrow)
 
 func _spawn_player_magic(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float, spell_level: int) -> void:
 	if not running or not world_state.can_spawn_player_projectile(WORLD_CONFIG):

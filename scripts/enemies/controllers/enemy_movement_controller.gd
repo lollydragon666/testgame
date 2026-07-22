@@ -8,7 +8,7 @@ func configure(enemy: EnemyBase) -> void:
 
 func approach(direction: Vector2, delta: float, speed_multiplier := 1.0) -> void:
 	if host != null and not direction.is_zero_approx():
-		host.world_position += direction.normalized() * host.move_speed * speed_multiplier * delta
+		host.world_position += direction.normalized() * host.effective_move_speed() * speed_multiplier * delta
 
 func retreat(direction_to_target: Vector2, delta: float, speed_multiplier := 1.0) -> void:
 	approach(-direction_to_target, delta, speed_multiplier)

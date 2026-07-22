@@ -3,6 +3,7 @@ extends Node
 
 signal enemy_died(enemy: EnemyBase, experience_value: int)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: float)
+signal arrow_requested(origin: Vector2, direction: Vector2, damage: float)
 signal spell_requested(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float)
 
 var game_content: GameContent
@@ -53,6 +54,7 @@ func spawn(enemy_id: StringName, difficulty: float = 1.0, requested_position := 
 	enemy.setup(player, spawn_position, difficulty, world_config, definition, is_elite)
 	enemy.died.connect(_relay_enemy_died)
 	enemy.projectile_requested.connect(_relay_projectile)
+	enemy.arrow_requested.connect(_relay_arrow)
 	enemy.spell_requested.connect(_relay_spell)
 	world_state.register_enemy(enemy)
 	world_root.add_child(enemy)
@@ -90,6 +92,9 @@ func _relay_enemy_died(enemy: EnemyBase, experience_value: int) -> void:
 
 func _relay_projectile(origin: Vector2, direction: Vector2, damage: float) -> void:
 	projectile_requested.emit(origin, direction, damage)
+
+func _relay_arrow(origin: Vector2, direction: Vector2, damage: float) -> void:
+	arrow_requested.emit(origin, direction, damage)
 
 func _relay_spell(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float) -> void:
 	spell_requested.emit(spell_kind, origin, direction, damage)

@@ -25,6 +25,9 @@ func _physics_process(delta: float) -> void:
 	lifetime -= delta
 	var previous_position := world_position
 	var next_position := world_position + velocity * delta
+	if world_state != null and world_state.is_position_blocked(next_position, collision_radius):
+		queue_free()
+		return
 	world_position = next_position
 	update_spatial_index()
 	position = IsoMath.world_to_screen(world_position)

@@ -3,6 +3,7 @@ extends Node2D
 
 signal died(enemy: EnemyBase, experience_value: int)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: float)
+signal arrow_requested(origin: Vector2, direction: Vector2, damage: float)
 signal spell_requested(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float)
 
 ## Позиция врага в общей логической системе координат мира.
@@ -25,6 +26,8 @@ var move_speed := 72.0
 ## Базовый урон собственной атаки врага.
 var contact_damage := 12.0
 var defense := 0.0
+var runtime_movement_multiplier := 1.0
+var runtime_attack_speed_multiplier := 1.0
 ## Опыт, выпадающий после смерти обычного врага.
 var experience_value := 18
 var is_elite := false
@@ -82,6 +85,9 @@ func _physics_process(delta: float) -> void:
 	if not is_alive or player == null or world_config == null or not player.is_alive:
 		return
 	hit_flash = maxf(0.0, hit_flash - delta)
+	var buff_multipliers := world_state.enemy_buff_multipliers(self) if world_state != null else Vector2.ONE
+	runtime_movement_multiplier = buff_multipliers.x
+	runtime_attack_speed_multiplier = buff_multipliers.y
 	var previous_position := world_position
 	previous_world_position = previous_position
 	tick_behavior(delta)
@@ -105,8 +111,11 @@ func move_toward_player(delta: float, speed_multiplier: float = 1.0) -> float:
 	var offset: Vector2 = player.world_position - world_position
 	var distance := offset.length()
 	if distance > 0.001:
-		world_position += offset / distance * move_speed * speed_multiplier * delta
+		world_position += offset / distance * effective_move_speed() * speed_multiplier * delta
 	return distance
+
+func effective_move_speed() -> float:
+	return move_speed * runtime_movement_multiplier
 
 func take_damage(amount: float, knockback_direction: Vector2 = Vector2.ZERO) -> void:
 	if not is_alive:

@@ -9,6 +9,9 @@ var drop_controller := EnemyDropController.new()
 var combat_facing := Vector2.RIGHT
 var disengage_remaining := 0.0
 var shield_open_remaining := 0.0
+var heal_windup_remaining := 0.0
+var heal_target: EnemyBase
+var strafe_side := 1.0
 
 func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float, config: WorldConfig, enemy_definition: EnemyDefinition = null, elite := false) -> void:
 	super.setup(player_target, spawn_position, difficulty, config, enemy_definition, elite)
@@ -18,6 +21,7 @@ func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float
 		attack_controller.configure(definition)
 		ability_controller.configure(definition.ability_cooldown)
 		drop_controller.configure(definition)
+	strafe_side = -1.0 if get_instance_id() % 2 == 0 else 1.0
 
 func tick_behavior(delta: float) -> void:
 	if definition == null:
@@ -27,6 +31,12 @@ func tick_behavior(delta: float) -> void:
 	shield_open_remaining = maxf(0.0, shield_open_remaining - delta)
 	combat_facing = targeting_controller.direction_to_player()
 	match definition.enemy_class:
+		EnemyDefinition.EnemyClass.ARCHER:
+			_tick_archer(delta)
+		EnemyDefinition.EnemyClass.HEALER:
+			_tick_healer(delta)
+		EnemyDefinition.EnemyClass.COMMANDER:
+			_tick_commander(delta)
 		EnemyDefinition.EnemyClass.RAIDER:
 			_tick_raider(delta)
 		EnemyDefinition.EnemyClass.BRUTE:
@@ -40,9 +50,67 @@ func tick_behavior(delta: float) -> void:
 		_:
 			_tick_swordsman(delta)
 
+func _tick_archer(delta: float) -> void:
+	var distance := targeting_controller.distance_to_player()
+	var hit_frame := attack_controller.tick(delta, runtime_attack_speed_multiplier)
+	if hit_frame and targeting_controller.has_line_of_sight(definition.attack_range):
+		arrow_requested.emit(world_position, combat_facing, definition.attack_damage)
+	if attack_controller.is_busy():
+		return
+	if distance < definition.retreat_distance:
+		movement_controller.retreat(combat_facing, delta)
+	elif distance > definition.preferred_distance:
+		movement_controller.approach(combat_facing, delta)
+	else:
+		movement_controller.strafe(combat_facing, strafe_side, delta, 0.45)
+		if targeting_controller.has_line_of_sight(definition.attack_range):
+			_start_attack()
+
+func _tick_healer(delta: float) -> void:
+	if heal_windup_remaining > 0.0:
+		heal_windup_remaining = maxf(0.0, heal_windup_remaining - delta)
+		visual_root.refresh_effects()
+		if heal_windup_remaining <= 0.0:
+			_complete_heal()
+		return
+	var distance := targeting_controller.distance_to_player()
+	if distance < definition.retreat_distance:
+		movement_controller.retreat(combat_facing, delta)
+	elif distance > definition.preferred_distance:
+		movement_controller.approach(combat_facing, delta, 0.82)
+	if ability_controller.ready():
+		var target := _most_injured_ally(360.0)
+		if target != null and ability_controller.consume():
+			heal_target = target
+			heal_windup_remaining = 0.72
+			visual_root.play_attack()
+
+func _tick_commander(delta: float) -> void:
+	_tick_swordsman(delta)
+
+func _most_injured_ally(radius: float) -> EnemyBase:
+	if world_state == null:
+		return null
+	var best: EnemyBase = null
+	var lowest_ratio := 1.0
+	for ally in world_state.enemies_near(world_position, radius):
+		if not ally.is_alive or ally.health >= ally.max_health:
+			continue
+		var ratio := ally.health / maxf(1.0, ally.max_health)
+		if ratio < lowest_ratio:
+			lowest_ratio = ratio
+			best = ally
+	return best
+
+func _complete_heal() -> void:
+	if is_instance_valid(heal_target) and heal_target.is_alive:
+		heal_target.health = minf(heal_target.max_health, heal_target.health + heal_target.max_health * definition.ability_power)
+		heal_target.visual_root.refresh_status()
+	heal_target = null
+
 func _tick_swordsman(delta: float) -> void:
 	var distance := targeting_controller.distance_to_player()
-	var hit_frame := attack_controller.tick(delta)
+	var hit_frame := attack_controller.tick(delta, runtime_attack_speed_multiplier)
 	if hit_frame:
 		_try_damage_player_in_range(definition.attack_range)
 	if attack_controller.is_busy():
@@ -54,7 +122,7 @@ func _tick_swordsman(delta: float) -> void:
 
 func _tick_raider(delta: float) -> void:
 	var distance := targeting_controller.distance_to_player()
-	var hit_frame := attack_controller.tick(delta)
+	var hit_frame := attack_controller.tick(delta, runtime_attack_speed_multiplier)
 	if hit_frame:
 		_try_damage_player_in_range(definition.attack_range)
 		disengage_remaining = 0.72
@@ -70,7 +138,7 @@ func _tick_raider(delta: float) -> void:
 
 func _tick_brute(delta: float) -> void:
 	var distance := targeting_controller.distance_to_player()
-	var hit_frame := attack_controller.tick(delta)
+	var hit_frame := attack_controller.tick(delta, runtime_attack_speed_multiplier)
 	if hit_frame:
 		_try_damage_player_in_range(definition.attack_range)
 	if attack_controller.is_busy():
@@ -82,7 +150,7 @@ func _tick_brute(delta: float) -> void:
 
 func _tick_shield_bearer(delta: float) -> void:
 	var distance := targeting_controller.distance_to_player()
-	var hit_frame := attack_controller.tick(delta)
+	var hit_frame := attack_controller.tick(delta, runtime_attack_speed_multiplier)
 	if hit_frame:
 		_try_damage_player_in_range(definition.attack_range)
 		shield_open_remaining = 0.58
@@ -95,7 +163,7 @@ func _tick_shield_bearer(delta: float) -> void:
 
 func _tick_spearman(delta: float) -> void:
 	var distance := targeting_controller.distance_to_player()
-	var hit_frame := attack_controller.tick(delta)
+	var hit_frame := attack_controller.tick(delta, runtime_attack_speed_multiplier)
 	if hit_frame and targeting_controller.has_line_of_sight(definition.attack_range + 12.0):
 		_try_damage_player_in_range(definition.attack_range)
 	if attack_controller.is_busy():

@@ -155,6 +155,17 @@ func enemy_separation(enemy: EnemyBase, search_radius: float) -> Vector2:
 		correction += offset / distance * (1.0 - distance / minimum_distance)
 	return correction.normalized() if not correction.is_zero_approx() else Vector2.ZERO
 
+func enemy_buff_multipliers(enemy: EnemyBase) -> Vector2:
+	var strongest_bonus := 0.0
+	for candidate in enemies_near(enemy.world_position, 220.0):
+		if candidate == enemy or not candidate.is_alive or candidate.definition == null:
+			continue
+		if candidate.definition.enemy_class != EnemyDefinition.EnemyClass.COMMANDER:
+			continue
+		if candidate.world_position.distance_to(enemy.world_position) <= 220.0:
+			strongest_bonus = maxf(strongest_bonus, candidate.definition.ability_power)
+	return Vector2.ONE * (1.0 + clampf(strongest_bonus, 0.0, 0.25))
+
 func resolve_obstacle_motion(from_position: Vector2, to_position: Vector2, radius: float) -> Vector2:
 	if not is_position_blocked(to_position, radius):
 		return to_position
