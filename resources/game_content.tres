@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="GameContent" load_steps=69 format=3]
+[gd_resource type="Resource" script_class="GameContent" load_steps=95 format=3]
 
 [ext_resource type="Script" path="res://scripts/content/game_content.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/content/enemies/brawler.tres" id="2"]
@@ -68,6 +68,32 @@
 [ext_resource type="Resource" path="res://resources/content/loot/armor_favored.tres" id="66"]
 [ext_resource type="Resource" path="res://resources/content/loot/jewelry_favored.tres" id="67"]
 [ext_resource type="Resource" path="res://resources/content/loot/mystic_favored.tres" id="68"]
+[ext_resource type="Resource" path="res://resources/content/props/rock.tres" id="69"]
+[ext_resource type="Resource" path="res://resources/content/props/rock_group.tres" id="70"]
+[ext_resource type="Resource" path="res://resources/content/props/dry_bush.tres" id="71"]
+[ext_resource type="Resource" path="res://resources/content/props/dead_tree.tres" id="72"]
+[ext_resource type="Resource" path="res://resources/content/props/crate.tres" id="73"]
+[ext_resource type="Resource" path="res://resources/content/props/broken_crate.tres" id="74"]
+[ext_resource type="Resource" path="res://resources/content/props/column.tres" id="75"]
+[ext_resource type="Resource" path="res://resources/content/props/ruined_column.tres" id="76"]
+[ext_resource type="Resource" path="res://resources/content/props/low_wall.tres" id="77"]
+[ext_resource type="Resource" path="res://resources/content/props/wall_rubble.tres" id="78"]
+[ext_resource type="Resource" path="res://resources/content/props/bones.tres" id="79"]
+[ext_resource type="Resource" path="res://resources/content/props/campfire.tres" id="80"]
+[ext_resource type="Resource" path="res://resources/content/props/torch.tres" id="81"]
+[ext_resource type="Resource" path="res://resources/content/props/sacks.tres" id="82"]
+[ext_resource type="Resource" path="res://resources/content/props/cart.tres" id="83"]
+[ext_resource type="Resource" path="res://resources/content/props/altar.tres" id="84"]
+[ext_resource type="Resource" path="res://resources/content/props/flag.tres" id="85"]
+[ext_resource type="Resource" path="res://resources/content/props/decal_cracks.tres" id="86"]
+[ext_resource type="Resource" path="res://resources/content/props/decal_mud.tres" id="87"]
+[ext_resource type="Resource" path="res://resources/content/props/decal_grass.tres" id="88"]
+[ext_resource type="Resource" path="res://resources/content/props/decal_small_stones.tres" id="89"]
+[ext_resource type="Resource" path="res://resources/content/props/decal_blood.tres" id="90"]
+[ext_resource type="Resource" path="res://resources/content/props/decal_impact.tres" id="91"]
+[ext_resource type="Resource" path="res://resources/content/props/decal_scorch.tres" id="92"]
+[ext_resource type="Resource" path="res://resources/content/props/decal_bone.tres" id="93"]
+[ext_resource type="Resource" path="res://resources/content/props/decal_pattern.tres" id="94"]
 
 [resource]
 script = ExtResource("1")
@@ -77,7 +103,7 @@ spells = Array[SpellDefinition]([ExtResource("9"), ExtResource("10")])
 weapons = Array[WeaponDefinition]([ExtResource("11")])
 upgrades = Array[UpgradeDefinition]([ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("27"), ExtResource("28"), ExtResource("29"), ExtResource("30")])
 waves = Array[WaveDefinition]([ExtResource("17"), ExtResource("18"), ExtResource("19"), ExtResource("20"), ExtResource("21"), ExtResource("22"), ExtResource("23"), ExtResource("58"), ExtResource("59"), ExtResource("60"), ExtResource("61"), ExtResource("62"), ExtResource("63"), ExtResource("64"), ExtResource("65")])
-props = Array[PropDefinition]([ExtResource("24"), ExtResource("25"), ExtResource("26")])
+props = Array[PropDefinition]([ExtResource("24"), ExtResource("25"), ExtResource("26"), ExtResource("69"), ExtResource("70"), ExtResource("71"), ExtResource("72"), ExtResource("73"), ExtResource("74"), ExtResource("75"), ExtResource("76"), ExtResource("77"), ExtResource("78"), ExtResource("79"), ExtResource("80"), ExtResource("81"), ExtResource("82"), ExtResource("83"), ExtResource("84"), ExtResource("85"), ExtResource("86"), ExtResource("87"), ExtResource("88"), ExtResource("89"), ExtResource("90"), ExtResource("91"), ExtResource("92"), ExtResource("93"), ExtResource("94")])
 locations = Array[LocationDefinition]([ExtResource("31")])
 item_catalog = ExtResource("32")
 shops = Array[ShopDefinition]([ExtResource("33"), ExtResource("34"), ExtResource("35")])

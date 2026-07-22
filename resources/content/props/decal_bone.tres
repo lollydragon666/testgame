@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PropDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/prop_definition.gd" id="1"]
+[resource]
+script=ExtResource("1")
+id=&"decal_bone"
+style=&"decal_bone"
+spawn_count=10
+visual_radius=16.0
+collision_radius=1.0
+destructible=false
+base_color=Color(0.62,0.57,0.47,0.72)
+has_collision=false
+blocks_navigation=false
+is_decal=true
+

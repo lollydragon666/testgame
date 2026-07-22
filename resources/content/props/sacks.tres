@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PropDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/prop_definition.gd" id="1"]
+[resource]
+script=ExtResource("1")
+id=&"sacks"
+style=&"sacks"
+spawn_count=12
+visual_radius=29.0
+collision_radius=24.0
+destructible=false
+base_color=Color(0.43,0.33,0.21,1)
+secondary_color=Color(0.23,0.17,0.11,1)
+visual_height=30.0
+

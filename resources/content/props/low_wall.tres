@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PropDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/prop_definition.gd" id="1"]
+[resource]
+script=ExtResource("1")
+id=&"low_wall"
+style=&"low_wall"
+spawn_count=16
+visual_radius=50.0
+collision_radius=43.0
+destructible=false
+base_color=Color(0.29,0.28,0.25,1)
+secondary_color=Color(0.16,0.15,0.13,1)
+accent_color=Color(0.43,0.41,0.35,1)
+visual_height=30.0
+

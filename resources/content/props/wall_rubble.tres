@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PropDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/prop_definition.gd" id="1"]
+[resource]
+script=ExtResource("1")
+id=&"wall_rubble"
+style=&"wall_rubble"
+spawn_count=20
+visual_radius=42.0
+collision_radius=28.0
+destructible=false
+base_color=Color(0.28,0.27,0.24,1)
+accent_color=Color(0.42,0.4,0.34,1)
+visual_height=24.0
+
