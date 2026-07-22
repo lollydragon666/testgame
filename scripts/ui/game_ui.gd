@@ -29,6 +29,7 @@ var dash_label: Label
 var quick_slot_2_label: Label
 var quick_slot_3_label: Label
 var expedition_label: Label
+var notification_label: Label
 var game_over_title: Label
 var game_over_details: Label
 var game_over_action_button: Button
@@ -204,6 +205,16 @@ func _build_hud() -> void:
 	dash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	dash_label.add_theme_font_size_override("font_size", 16)
 	quick_box.add_child(dash_label)
+
+	notification_label = Label.new()
+	notification_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	notification_label.position = Vector2(-220.0, 78.0)
+	notification_label.size = Vector2(440.0, 36.0)
+	notification_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	notification_label.add_theme_font_size_override("font_size", 18)
+	notification_label.add_theme_color_override("font_color", Color("d0ad64"))
+	notification_label.visible = false
+	hud.add_child(notification_label)
 
 func _build_upgrade_panel() -> void:
 	upgrade_panel = ColorRect.new()
@@ -391,6 +402,17 @@ func set_consumable_slots(inventory: InventoryService) -> void:
 		return
 	_set_consumable_slot_label(quick_slot_2_label, "2", ItemEnums.EquipmentSlot.CONSUMABLE_2, inventory)
 	_set_consumable_slot_label(quick_slot_3_label, "3", ItemEnums.EquipmentSlot.CONSUMABLE_3, inventory)
+
+func show_notification(message: String) -> void:
+	if notification_label == null:
+		return
+	notification_label.text = message
+	notification_label.visible = true
+	var shown_message := message
+	get_tree().create_timer(1.8, true, false, true).timeout.connect(func():
+		if notification_label != null and notification_label.text == shown_message:
+			notification_label.visible = false
+	)
 
 func _set_consumable_slot_label(
 	label: Label,

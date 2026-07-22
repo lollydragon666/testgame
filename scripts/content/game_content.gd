@@ -10,6 +10,7 @@ extends Resource
 @export var locations: Array[LocationDefinition] = []
 @export var item_catalog: ItemCatalog
 @export var shops: Array[ShopDefinition] = []
+@export var loot_tables: Array[LootTable] = []
 
 func enemy(id: StringName) -> EnemyDefinition:
 	for definition in enemies:
@@ -40,6 +41,12 @@ func all_items() -> Array[ItemDefinition]:
 
 func shop(id: StringName) -> ShopDefinition:
 	for definition in shops:
+		if definition != null and definition.id == id:
+			return definition
+	return null
+
+func loot_table(id: StringName) -> LootTable:
+	for definition in loot_tables:
 		if definition != null and definition.id == id:
 			return definition
 	return null

@@ -5,6 +5,8 @@ signal run_setup_requested(player: PlayerHero)
 signal run_started
 signal run_finished(victory: bool)
 signal result_action_requested
+signal world_item_dropped(drop: WorldItemDrop)
+signal world_item_picked_up(item: ItemInstance)
 
 const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 const LOCATION_SCENE := preload("res://scenes/world/location.tscn")
@@ -40,6 +42,7 @@ var pending_level_ups := 0
 ## Не более трёх ID, показанных в текущем окне. Только они принимаются _apply_upgrade().
 var current_upgrade_choices: Array[StringName] = []
 var inventory_service: InventoryService
+var loot_service := LootService.new()
 
 const MAX_UPGRADE_CHOICES := 3
 
@@ -73,6 +76,7 @@ func _ready() -> void:
 	world_state.name = "WorldState"
 	world_state.configure(WORLD_CONFIG)
 	add_child(world_state)
+	loot_service.configure(GAME_CONTENT)
 
 	location = LOCATION_SCENE.instantiate() as GameLocation
 	location.name = "Location"
@@ -176,9 +180,10 @@ func _start_run() -> void:
 
 func _clear_runtime_nodes() -> void:
 	# Группы используются только для редкой массовой очистки между забегами.
-	for group_name in [&"enemy", &"enemy_projectile", &"player_magic_projectile", &"pickup", &"temporary_effect"]:
+	for group_name in [&"enemy", &"enemy_projectile", &"player_magic_projectile", &"pickup", &"world_item_drop", &"temporary_effect"]:
 		_clear_group(group_name)
 	world_state.clear_runtime()
+	loot_service.clear_runtime()
 
 func _clear_group(group_name: StringName) -> void:
 	for node in get_tree().get_nodes_in_group(group_name):
@@ -253,12 +258,41 @@ func _on_enemy_died(enemy: EnemyBase, experience_value: int) -> void:
 	defeated_enemies += 1
 	if enemy.is_elite:
 		defeated_elites += 1
+	if running:
+		var dropped_items := loot_service.roll_for_enemy(enemy, current_wave(), player.equipment_loot_chance, run_random)
+		for dropped_item in dropped_items:
+			_spawn_world_item(dropped_item, enemy.world_position)
 	if enemy.definition != null and enemy.definition.is_boss:
 		if wave_manager.running:
 			wave_manager.notify_boss_defeated()
 		return
 	if running:
 		_spawn_experience(enemy.world_position, experience_value)
+
+func _spawn_world_item(item: ItemInstance, spawn_position: Vector2) -> WorldItemDrop:
+	if item == null or not running or not loot_service.can_spawn_world_drop():
+		return null
+	var definition := GAME_CONTENT.item(item.definition_id)
+	if definition == null:
+		return null
+	var drop := WorldItemDrop.new()
+	var offset := Vector2.from_angle(run_random.randf_range(0.0, TAU)) * run_random.randf_range(8.0, 24.0)
+	drop.setup(item, definition, player, inventory_service, spawn_position + offset)
+	if not loot_service.register_world_drop(drop):
+		drop.free()
+		return null
+	drop.picked_up.connect(_on_world_item_picked_up)
+	drop.pickup_failed.connect(_on_world_item_pickup_failed)
+	world_root.add_child(drop)
+	world_item_dropped.emit(drop)
+	return drop
+
+func _on_world_item_picked_up(item: ItemInstance) -> void:
+	world_item_picked_up.emit(item)
+
+func _on_world_item_pickup_failed(message: String) -> void:
+	if ui != null:
+		ui.show_notification(message)
 
 func _start_boss(enemy_kind: StringName, difficulty: float) -> void:
 	clear_projectiles()
