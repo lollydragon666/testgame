@@ -97,6 +97,15 @@ func _run() -> void:
 		"overlapping_enemy_pairs": _count_overlapping_enemy_pairs(config.enemy_separation_radius),
 		"static_memory_bytes": int(Performance.get_monitor(Performance.MEMORY_STATIC)),
 		"node_count": int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		"godot_version": Engine.get_version_info()["string"],
+		"os": OS.get_name(),
+		"processor_count": OS.get_processor_count(),
+		"video_adapter": RenderingServer.get_video_adapter_name(),
+		"physics_ticks_per_second": Engine.physics_ticks_per_second,
+		"viewport_size": "%dx%d" % [
+			ProjectSettings.get_setting("display/window/size/viewport_width"),
+			ProjectSettings.get_setting("display/window/size/viewport_height"),
+		],
 	}
 	print("COMBAT_BENCHMARK %s" % JSON.stringify(result))
 	get_tree().quit()
