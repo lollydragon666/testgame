@@ -26,4 +26,5 @@ func tick_behavior(delta: float) -> void:
 	world_position += direction.orthogonal() * strafe_sign * move_speed * 0.42 * delta
 	if distance < 620.0 and shot_cooldown <= 0.0:
 		shot_cooldown = 2.35
+		visual_root.play_attack()
 		projectile_requested.emit(world_position, direction, 12.0)

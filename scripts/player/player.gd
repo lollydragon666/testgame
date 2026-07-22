@@ -236,9 +236,11 @@ func take_damage(amount: float) -> void:
 	var reduced_amount := maxf(0.0, armor_reduced) * 100.0 / (100.0 + maxf(0.0, total_defense))
 	health = maxf(0.0, health - reduced_amount)
 	invulnerability = 0.45
+	visual_root.play_hurt()
 	health_changed.emit(health, max_health)
 	if health <= 0.0:
 		is_alive = false
+		visual_root.play_death()
 		died.emit()
 
 func heal(amount: float) -> void:

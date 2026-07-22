@@ -15,7 +15,9 @@ func sync_from_enemy(enemy: EnemyBase) -> void:
 	if enemy.player != null:
 		set_facing(enemy.player.world_position - enemy.world_position)
 	set_movement_state(enemy.world_position - enemy.previous_world_position)
-	refresh_visual()
+
+func refresh_status() -> void:
+	refresh_effects()
 
 func draw_part(part_id: StringName) -> void:
 	if part_id == PART_EFFECTS:

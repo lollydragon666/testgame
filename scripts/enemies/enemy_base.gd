@@ -111,13 +111,15 @@ func take_damage(amount: float, knockback_direction: Vector2 = Vector2.ZERO) -> 
 		return
 	health -= amount
 	hit_flash = 0.15
-	refresh_visual()
+	visual_root.play_hurt()
+	visual_root.refresh_status()
 	world_position += knockback_direction.normalized() * 18.0
 	if world_state != null:
 		world_position = world_state.resolve_obstacle_motion(world_position - knockback_direction.normalized() * 18.0, world_position, collision_radius)
 		world_state.update_enemy(self)
 	if health <= 0.0:
 		is_alive = false
+		visual_root.play_death()
 		died.emit(self, experience_value)
 		queue_free()
 

@@ -39,4 +39,5 @@ func tick_behavior(delta: float) -> void:
 	if distance <= cast_range and cast_cooldown <= 0.0:
 		cast_cooldown = cast_interval
 		cast_flash = 0.3
+		visual_root.play_attack()
 		spell_requested.emit(spell_kind, world_position, direction, spell_damage)

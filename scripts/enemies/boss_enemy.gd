@@ -33,3 +33,4 @@ func tick_behavior(delta: float) -> void:
 		attack_cooldown = 4.5
 		windup = 1.4
 		attack_applied = false
+		visual_root.play_attack()

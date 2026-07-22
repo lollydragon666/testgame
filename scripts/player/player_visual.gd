@@ -6,11 +6,17 @@ const PLAYER_VISUAL := preload("res://resources/content/visuals/player.tres")
 func _ready() -> void:
 	apply_visual_definition(PLAYER_VISUAL)
 	super._ready()
+	var attack_component := get_node_or_null("../Attack") as PlayerAttack
+	if attack_component != null and not attack_component.attack_started.is_connected(play_attack):
+		attack_component.attack_started.connect(play_attack)
 
 func sync_from_player(player: PlayerHero) -> void:
 	set_facing(player.aim_direction)
 	set_movement_state(player.movement.velocity)
-	refresh_visual()
+	if weapon_visual != null:
+		weapon_visual.queue_redraw()
+	if player.attack.swing_time > 0.0 and effects != null:
+		effects.queue_redraw()
 
 func _make_weapon_part(parent: Node) -> CharacterVisualPart:
 	var sword := PlayerSwordVisual.new()

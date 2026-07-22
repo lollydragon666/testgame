@@ -36,3 +36,4 @@ func tick_behavior(delta: float) -> void:
 		punch_time = PUNCH_DURATION
 		punch_pending = true
 		punch_side *= -1.0
+		visual_root.play_attack()

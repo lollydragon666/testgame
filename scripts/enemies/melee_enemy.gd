@@ -47,6 +47,7 @@ func tick_behavior(delta: float) -> void:
 		swing_direction = next_swing_direction
 		next_swing_direction *= -1.0
 		hit_pending = true
+		visual_root.play_attack()
 
 func _swing_start_offset() -> float:
 	return SWING_START if swing_direction > 0.0 else SWING_END

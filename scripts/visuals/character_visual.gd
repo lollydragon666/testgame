@@ -82,12 +82,15 @@ func set_facing(direction: Vector2) -> void:
 
 func play_attack() -> void:
 	attack_pulse = 1.0
+	refresh_effects()
 
 func play_hurt() -> void:
 	hurt_pulse = 1.0
+	refresh_effects()
 
 func play_death() -> void:
 	death_progress = 0.01
+	refresh_effects()
 
 func _process(delta: float) -> void:
 	animation_time += delta
@@ -104,18 +107,30 @@ func _apply_transforms() -> void:
 	var bob := sin(animation_time * (10.0 if moving else 3.2)) * (2.0 if moving else 0.8)
 	var screen_facing := IsoMath.world_to_screen(facing_direction).normalized()
 	mirrored_visual_root.scale.x = -1.0 if screen_facing.x < 0.0 else 1.0
-	mirrored_visual_root.position.y = bob + death_progress * 16.0
-	mirrored_visual_root.rotation = sin(animation_time * 7.0) * 0.025 if moving else 0.0
-	mirrored_visual_root.rotation += attack_pulse * 0.10
+	mirrored_visual_root.position = Vector2(-hurt_pulse * 3.0, bob + death_progress * 16.0)
+	mirrored_visual_root.rotation = sin(animation_time * 7.0) * 0.025 if moving else sin(animation_time * 2.1) * 0.008
+	mirrored_visual_root.rotation += attack_pulse * 0.10 + death_progress * 0.32
 	mirrored_visual_root.scale.y = 1.0 - death_progress * 0.55
-	mirrored_visual_root.modulate = Color(1.0, 0.55, 0.55) if hurt_pulse > 0.0 else Color.WHITE
+	mirrored_visual_root.modulate = Color(1.0, 0.55, 0.55, 1.0 - death_progress * 0.85) if hurt_pulse > 0.0 else Color(1.0, 1.0, 1.0, 1.0 - death_progress * 0.85)
+	var head_lag := sin(animation_time * (8.0 if moving else 2.5) - 0.55) * (1.4 if moving else 0.45)
+	if head != null:
+		head.position.y = head_lag - attack_pulse * 1.5
+	if helmet != null:
+		helmet.position.y = head_lag - attack_pulse * 1.5
+	if weapon_socket != null:
+		weapon_socket.position.y = sin(animation_time * 3.0) * 0.6 - attack_pulse * 1.2
 	if ground_shadow != null:
-		ground_shadow.scale = Vector2(1.08, 0.92) if moving else Vector2.ONE
+		ground_shadow.scale = (Vector2(1.08, 0.92) if moving else Vector2.ONE) * (1.0 - death_progress * 0.18)
+		ground_shadow.modulate.a = 1.0 - death_progress
 
 func refresh_visual() -> void:
 	for part in [ground_shadow, body, head, helmet, additional_visual, weapon_visual, effects]:
 		if part != null:
 			part.queue_redraw()
+
+func refresh_effects() -> void:
+	if effects != null:
+		effects.queue_redraw()
 
 func draw_part(part_id: StringName) -> void:
 	if visual_definition == null:

@@ -39,3 +39,4 @@ func tick_behavior(delta: float) -> void:
 		attack_cooldown = 2.05
 		thrust_time = THRUST_DURATION
 		hit_pending = true
+		visual_root.play_attack()
