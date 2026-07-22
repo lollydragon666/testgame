@@ -2,6 +2,8 @@ extends Node
 
 signal run_succeeded(run_id: String)
 signal run_rewards_committed(run_id: String, item_count: int)
+signal run_failed(run_id: String, reason: RunContext.RunFailureReason)
+signal run_loot_lost(run_id: String, item_count: int)
 
 enum Mode {
 	MENU,
@@ -187,23 +189,31 @@ func complete_run_successfully() -> bool:
 	var previous_runtime_equipment := inventory.runtime_equipment_snapshot()
 	var previous_pending := pending_run_rewards.serialized_items()
 	run_context.state = RunContext.RunState.SUCCESS_PENDING
+	run_context.evacuated_items.clear()
 	var pending_count := 0
 	_auto_save_suspended = true
 	inventory.begin_transaction()
 	for item in run_items:
+		var summary := item.to_dict()
 		if not inventory.add_item_preserving_identity(item):
 			if not pending_run_rewards.add_item(item):
 				inventory.end_transaction()
 				_rollback_reward_transfer(previous_items, previous_equipment, previous_runtime_equipment, previous_pending)
 				_auto_save_suspended = false
+				run_context.evacuated_items.clear()
 				run_context.state = RunContext.RunState.ACTIVE
 				return false
 			pending_count += 1
+			summary["pending"] = true
+		else:
+			summary["pending"] = false
+		run_context.evacuated_items.append(summary)
 	inventory.end_transaction()
 	var saved := save_profile()
 	_auto_save_suspended = false
 	if not saved:
 		_rollback_reward_transfer(previous_items, previous_equipment, previous_runtime_equipment, previous_pending)
+		run_context.evacuated_items.clear()
 		run_context.state = RunContext.RunState.ACTIVE
 		return false
 	run_context.rewards_committed = true
@@ -215,6 +225,26 @@ func complete_run_successfully() -> bool:
 	inventory.detach_run_inventory()
 	run_succeeded.emit(run_context.run_id)
 	run_rewards_committed.emit(run_context.run_id, run_items.size())
+	return true
+
+func fail_current_run(reason: RunContext.RunFailureReason) -> bool:
+	if run_context.state != RunContext.RunState.ACTIVE or run_context.failure_processed:
+		return false
+	var run_id := run_context.run_id
+	run_context.state = RunContext.RunState.FAILED
+	run_context.failure_reason = reason
+	run_context.completed_at_unix = int(Time.get_unix_time_from_system())
+	run_context.lost_items.clear()
+	for item in run_inventory.get_items():
+		if item != null:
+			run_context.lost_items.append(item.to_dict())
+	run_inventory.clear()
+	inventory.restore_runtime_equipment(run_context.starting_equipment)
+	inventory.detach_run_inventory()
+	run_context.failure_processed = true
+	save_profile()
+	run_failed.emit(run_id, reason)
+	run_loot_lost.emit(run_id, run_context.lost_items.size())
 	return true
 
 func _rollback_reward_transfer(

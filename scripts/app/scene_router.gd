@@ -11,10 +11,12 @@ func register_root(root: Node) -> void:
 	_game_root = root
 
 func show_main_menu() -> void:
+	_abandon_active_run()
 	_session().enter_menu()
 	_change_scene(MAIN_MENU_SCENE)
 
 func show_hub() -> void:
+	_abandon_active_run()
 	_session().enter_hub()
 	_change_scene(HUB_SCENE)
 
@@ -43,6 +45,10 @@ func restart_combat_sandbox() -> void:
 func leave_combat_sandbox() -> void:
 	Engine.time_scale = 1.0
 	show_main_menu()
+
+func _abandon_active_run() -> void:
+	if _session().run_context.state == RunContext.RunState.ACTIVE:
+		_session().fail_current_run(RunContext.RunFailureReason.ABANDONED)
 
 func _change_scene(scene: PackedScene, setup_callback: Callable = Callable()) -> void:
 	if _game_root == null:

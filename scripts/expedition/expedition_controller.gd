@@ -116,6 +116,8 @@ func _on_run_finished(victory: bool) -> void:
 		if not _session().profile.register_location_victory(location_definition, tier_definition.tier):
 			push_error("Failed to register expedition victory")
 			return
+	else:
+		_session().fail_current_run(RunContext.RunFailureReason.PLAYER_DEATH)
 	result = ExpeditionResult.create(
 		victory,
 		location_definition.id,
@@ -135,12 +137,28 @@ func _on_run_finished(victory: bool) -> void:
 		result.defeated_elites,
 		result.duration_seconds,
 	]
-	if victory:
-		details += "\n\nДОБЫЧА СОХРАНЕНА: %d\nВ ОЖИДАНИИ МЕСТА: %d" % [
-			_session().run_context.committed_item_count,
-			_session().run_context.pending_item_count,
-		]
+	details += _run_loot_details(victory)
 	combat.ui.show_game_over(victory, "ВЕРНУТЬСЯ В ХАБ", details)
+
+func _run_loot_details(victory: bool) -> String:
+	var entries: Array[Dictionary] = _session().run_context.evacuated_items if victory else _session().run_context.lost_items
+	var heading := "ДОБЫЧА СОХРАНЕНА" if victory else "ПОТЕРЯННАЯ ДОБЫЧА"
+	var lines: Array[String] = ["\n\n%s: %d" % [heading, entries.size()]]
+	for entry in entries:
+		var item := ItemInstance.from_dict(entry)
+		var definition := CONTENT.item(item.definition_id) if item != null else null
+		if item == null or definition == null:
+			continue
+		var suffix := " · ОЖИДАЕТ МЕСТА" if bool(entry.get("pending", false)) else ""
+		lines.append("%s · %s · ур. %d%s" % [
+			ItemRarityPresentation.display_name(item, definition),
+			ItemRarityPresentation.rarity_name(item.rarity),
+			item.item_level,
+			suffix,
+		])
+		for affix in item.affixes:
+			lines.append("  %s" % ItemRarityPresentation.format_affix(affix, CONTENT))
+	return "\n".join(lines)
 
 func _return_to_hub() -> void:
 	get_node("/root/SceneRouter").finish_expedition(result)

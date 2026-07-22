@@ -27,6 +27,9 @@ var rewards_committed := false
 var failure_processed := false
 var committed_item_count := 0
 var pending_item_count := 0
+var evacuated_items: Array[Dictionary] = []
+var lost_items: Array[Dictionary] = []
+var failure_reason := RunFailureReason.PLAYER_DEATH
 
 static func create(equipment: Dictionary) -> RunContext:
 	var context := RunContext.new()
