@@ -24,6 +24,14 @@ var experience_required := 100
 ## Оставшееся время неуязвимости после получения урона.
 var invulnerability := 0.0
 var is_alive := true
+## Runtime-множитель общего урона меча и магии. POWER добавляет по 0.15.
+var power_multiplier := 1.0
+## Runtime-множитель перезарядки атак. HASTE умножает его на 0.90.
+var haste_cooldown_multiplier := 1.0
+## Доля поглощаемого входящего урона, ограниченная 40%.
+var armor_damage_reduction := 0.0
+## Локальный бонус радиуса магнита, не изменяющий общий WorldConfig.
+var magnet_range_bonus := 0.0
 
 # Компоненты объявлены в player.tscn, а поведенческий скрипт только связывает их.
 @onready var movement: PlayerMovement = $Movement
@@ -84,7 +92,7 @@ func _physics_process(delta: float) -> void:
 	refresh_visual()
 
 func experience_magnet_range() -> float:
-	return attack.attack_reach + world_config.pickup_magnet_extra_range
+	return attack.attack_reach + world_config.pickup_magnet_extra_range + magnet_range_bonus
 
 func experience_magnet_speed(distance: float) -> float:
 	return world_config.pickup_magnet_base_speed + maxf(
@@ -104,7 +112,8 @@ func _relay_magic_changed(spell_kind: StringName, spell_level: int) -> void:
 func take_damage(amount: float) -> void:
 	if invulnerability > 0.0 or not is_alive:
 		return
-	health = maxf(0.0, health - amount)
+	var reduced_amount := amount * (1.0 - armor_damage_reduction)
+	health = maxf(0.0, health - reduced_amount)
 	invulnerability = 0.45
 	health_changed.emit(health, max_health)
 	if health <= 0.0:
@@ -135,6 +144,21 @@ func upgrade_vitality() -> void:
 	hurtbox.set_collision_radius(collision_radius)
 	health_changed.emit(health, max_health)
 
+func upgrade_power() -> void:
+	power_multiplier += 0.15
+
+func upgrade_haste() -> void:
+	haste_cooldown_multiplier *= 0.90
+
+func upgrade_armor() -> void:
+	armor_damage_reduction = minf(0.40, armor_damage_reduction + 0.08)
+
+func can_upgrade_armor() -> bool:
+	return armor_damage_reduction < 0.40 - 0.001
+
+func upgrade_magnet() -> void:
+	magnet_range_bonus += 35.0
+
 func reset_run() -> void:
 	world_position = Vector2.ZERO
 	position = Vector2.ZERO
@@ -148,6 +172,10 @@ func reset_run() -> void:
 	experience_required = 100
 	invulnerability = 0.0
 	is_alive = true
+	power_multiplier = 1.0
+	haste_cooldown_multiplier = 1.0
+	armor_damage_reduction = 0.0
+	magnet_range_bonus = 0.0
 	movement.speed = 195.0
 	movement.reset()
 	attack.reset()

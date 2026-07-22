@@ -29,9 +29,8 @@ func try_cast() -> void:
 		push_error("Unknown player spell: %s" % active_spell)
 		return
 	var spell_level := int(spell_levels[active_spell])
-	var level_offset := float(spell_level - 1)
-	var spell_damage := definition.base_damage + level_offset * definition.damage_per_level
-	cooldown = maxf(definition.minimum_cooldown, definition.base_cooldown - level_offset * definition.cooldown_reduction_per_level)
+	var spell_damage := effective_spell_damage(active_spell)
+	cooldown = effective_spell_cooldown(active_spell)
 	var origin := host.world_position + host.aim_direction * (host.collision_radius + 14.0)
 	cast_requested.emit(active_spell, origin, host.aim_direction, spell_damage, spell_level)
 
@@ -49,6 +48,23 @@ func can_upgrade_spell(spell_kind: StringName) -> bool:
 
 func get_spell_level(spell_kind: StringName) -> int:
 	return int(spell_levels.get(spell_kind, 0))
+
+func effective_spell_damage(spell_kind: StringName) -> float:
+	var definition := game_content.spell(spell_kind) if game_content != null else null
+	if definition == null:
+		return 0.0
+	var level_offset := float(maxi(1, get_spell_level(spell_kind)) - 1)
+	var base_value := definition.base_damage + level_offset * definition.damage_per_level
+	return base_value * (host.power_multiplier if host != null else 1.0)
+
+func effective_spell_cooldown(spell_kind: StringName) -> float:
+	var definition := game_content.spell(spell_kind) if game_content != null else null
+	if definition == null:
+		return 0.0
+	var level_offset := float(maxi(1, get_spell_level(spell_kind)) - 1)
+	var leveled_cooldown := definition.base_cooldown - level_offset * definition.cooldown_reduction_per_level
+	var haste_multiplier := host.haste_cooldown_multiplier if host != null else 1.0
+	return maxf(definition.minimum_cooldown, leveled_cooldown * haste_multiplier)
 
 func reset() -> void:
 	spell_levels.clear()

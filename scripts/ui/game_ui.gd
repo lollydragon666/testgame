@@ -11,6 +11,7 @@ signal upgrade_selected(kind: StringName)
 
 ## Небольшая блокировка предотвращает случайный выбор кнопкой, открывшей окно уровня.
 const UPGRADE_INPUT_DELAY := 0.20
+const MAX_VISIBLE_UPGRADES := 3
 
 var menu: ColorRect
 var hud: Control
@@ -252,9 +253,15 @@ func show_game() -> void:
 
 func show_upgrade(available_upgrades: Array[StringName]) -> void:
 	upgrade_selection_locked = true
+	var visible_upgrades: Array[StringName] = []
+	for kind in available_upgrades:
+		if visible_upgrades.size() >= MAX_VISIBLE_UPGRADES:
+			break
+		if upgrade_buttons.has(kind) and not visible_upgrades.has(kind):
+			visible_upgrades.append(kind)
 	for kind in upgrade_buttons:
 		var button: Button = upgrade_buttons[kind]
-		button.visible = available_upgrades.has(kind)
+		button.visible = visible_upgrades.has(kind)
 		button.disabled = true
 	upgrade_delay_timer.start()
 	upgrade_panel.visible = true

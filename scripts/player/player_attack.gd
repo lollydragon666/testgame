@@ -58,7 +58,7 @@ func _physics_process(delta: float) -> void:
 func try_attack() -> void:
 	if host == null or world_state == null or cooldown > 0.0 or not host.is_alive:
 		return
-	cooldown = cooldown_duration
+	cooldown = effective_cooldown_duration()
 	swing_time = swing_duration
 	swing_direction = next_swing_direction
 	next_swing_direction *= -1.0
@@ -85,7 +85,7 @@ func _hit_enemies_between(from_offset: float, to_offset: float) -> void:
 			continue
 		if point_in_blade_sweep(enemy.world_position, enemy.collision_radius, from_offset, to_offset):
 			hit_targets[target_id] = true
-			enemy.take_damage(damage, swing_aim_direction)
+			enemy.take_damage(effective_damage(), swing_aim_direction)
 
 func _hit_projectiles_between(from_offset: float, to_offset: float) -> void:
 	var query_radius := host.collision_radius + attack_reach + 48.0
@@ -154,6 +154,13 @@ func upgrade_sword() -> void:
 
 func can_upgrade_sword() -> bool:
 	return definition != null and sword_tier < definition.max_tier
+
+func effective_damage() -> float:
+	return damage * (host.power_multiplier if host != null else 1.0)
+
+func effective_cooldown_duration() -> float:
+	var haste_multiplier := host.haste_cooldown_multiplier if host != null else 1.0
+	return maxf(0.14, cooldown_duration * haste_multiplier)
 
 func reset() -> void:
 	if definition == null:

@@ -22,6 +22,10 @@ var world_state: WorldState
 var running := false
 ## Число повышений, за которые игрок ещё не выбрал усиление.
 var pending_level_ups := 0
+## Не более трёх ID, показанных в текущем окне. Только они принимаются _apply_upgrade().
+var current_upgrade_choices: Array[StringName] = []
+
+const MAX_UPGRADE_CHOICES := 3
 
 func _ready() -> void:
 	randomize()
@@ -74,6 +78,7 @@ func _ready() -> void:
 func _start_run() -> void:
 	get_tree().paused = false
 	pending_level_ups = 0
+	current_upgrade_choices.clear()
 	_clear_runtime_nodes()
 	location.regenerate()
 	_register_location_destructibles()
@@ -222,6 +227,7 @@ func _on_level_up(_level: int) -> void:
 		_show_next_level_up()
 
 func _show_next_level_up() -> void:
+	current_upgrade_choices.clear()
 	if not running or pending_level_ups <= 0:
 		pending_level_ups = 0
 		ui.hide_upgrade()
@@ -233,8 +239,9 @@ func _show_next_level_up() -> void:
 		ui.hide_upgrade()
 		get_tree().paused = false
 		return
+	current_upgrade_choices = _random_upgrade_choices(available_upgrades)
 	get_tree().paused = true
-	ui.show_upgrade(available_upgrades)
+	ui.show_upgrade(current_upgrade_choices)
 
 func available_upgrade_choices() -> Array[StringName]:
 	var choices: Array[StringName] = []
@@ -243,13 +250,24 @@ func available_upgrade_choices() -> Array[StringName]:
 			continue
 		if not definition.spell_id.is_empty() and not player.magic.can_upgrade_spell(definition.spell_id):
 			continue
+		if definition.id == GameIds.UPGRADE_ARMOR and not player.can_upgrade_armor():
+			continue
 		choices.append(definition.id)
 	return choices
 
-func _apply_upgrade(kind: StringName) -> void:
-	if pending_level_ups <= 0 or not available_upgrade_choices().has(kind):
-		push_error("Unavailable upgrade choice: %s" % kind)
-		return
+func _random_upgrade_choices(available_upgrades: Array[StringName]) -> Array[StringName]:
+	var unique_choices: Array[StringName] = []
+	for kind in available_upgrades:
+		if not unique_choices.has(kind):
+			unique_choices.append(kind)
+	unique_choices.shuffle()
+	if unique_choices.size() > MAX_UPGRADE_CHOICES:
+		unique_choices.resize(MAX_UPGRADE_CHOICES)
+	return unique_choices
+
+func _apply_upgrade(kind: StringName) -> bool:
+	if pending_level_ups <= 0 or not current_upgrade_choices.has(kind):
+		return false
 	match kind:
 		GameIds.UPGRADE_SWORD:
 			player.attack.upgrade_sword()
@@ -257,18 +275,28 @@ func _apply_upgrade(kind: StringName) -> void:
 			player.upgrade_speed()
 		GameIds.UPGRADE_VITALITY:
 			player.upgrade_vitality()
+		GameIds.UPGRADE_POWER:
+			player.upgrade_power()
+		GameIds.UPGRADE_HASTE:
+			player.upgrade_haste()
+		GameIds.UPGRADE_ARMOR:
+			player.upgrade_armor()
+		GameIds.UPGRADE_MAGNET:
+			player.upgrade_magnet()
 		_:
 			var definition := GAME_CONTENT.upgrade(kind)
 			if definition == null or definition.spell_id.is_empty():
 				push_error("Unknown upgrade kind: %s" % kind)
-				return
+				return false
 			player.magic.unlock_or_upgrade(definition.spell_id)
+	current_upgrade_choices.clear()
 	pending_level_ups -= 1
 	if pending_level_ups > 0:
 		_show_next_level_up()
 	else:
 		ui.hide_upgrade()
 		get_tree().paused = false
+	return true
 
 func _on_magic_changed(spell_kind: StringName, spell_level: int) -> void:
 	ui.set_magic(spell_kind, spell_level)
@@ -279,6 +307,7 @@ func _on_player_died() -> void:
 func _finish_run(victory: bool) -> void:
 	running = false
 	pending_level_ups = 0
+	current_upgrade_choices.clear()
 	wave_manager.stop()
 	player.set_gameplay_active(false)
 	_clear_runtime_nodes()
