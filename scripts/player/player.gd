@@ -63,6 +63,7 @@ var input_state := InputState.new()
 var world_config: WorldConfig
 var game_content: GameContent
 var world_state: WorldState
+var _obstacle_query_buffer: Array[WorldProp] = []
 
 var world_limit: float:
 	get:
@@ -114,7 +115,7 @@ func _physics_process(delta: float) -> void:
 		var previous_position := world_position
 		world_position = movement.step(delta, world_position, world_limit, input_state.movement_screen)
 		if world_state != null:
-			world_position = world_state.resolve_obstacle_motion(previous_position, world_position, collision_radius)
+			world_position = world_state.resolve_obstacle_motion(previous_position, world_position, collision_radius, _obstacle_query_buffer)
 	# Камера следует за героем, поэтому сам герой остаётся около центра экрана.
 	position = IsoMath.world_to_screen(world_position)
 	if not is_dashing and input_state.attack_pressed:
@@ -162,7 +163,7 @@ func _step_dash(delta: float) -> void:
 			Vector2.ONE * world_limit
 		)
 		if world_state != null:
-			candidate = world_state.resolve_obstacle_motion(world_position, candidate, collision_radius)
+			candidate = world_state.resolve_obstacle_motion(world_position, candidate, collision_radius, _obstacle_query_buffer)
 		var moved_distance := previous_position.distance_to(candidate)
 		if moved_distance <= 0.001:
 			_finish_dash()

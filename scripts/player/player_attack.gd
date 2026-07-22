@@ -36,6 +36,9 @@ var host: PlayerHero
 var world_state: WorldState
 var attack_shape := AttackShape.new()
 var definition: WeaponDefinition
+var _enemy_query_buffer: Array[EnemyBase] = []
+var _projectile_query_buffer: Array[DeflectableProjectile] = []
+var _destructible_query_buffer: Array[WorldProp] = []
 
 func setup(player_host: PlayerHero, weapon_definition: WeaponDefinition) -> void:
 	host = player_host
@@ -77,7 +80,8 @@ func _hit_groups_between(from_offset: float, to_offset: float) -> void:
 
 func _hit_enemies_between(from_offset: float, to_offset: float) -> void:
 	var query_radius := host.collision_radius + attack_reach + 80.0
-	for enemy in world_state.enemies_near(host.world_position, query_radius):
+	world_state.enemies_near_into(host.world_position, query_radius, _enemy_query_buffer)
+	for enemy in _enemy_query_buffer:
 		if not is_instance_valid(enemy) or not enemy.is_alive:
 			continue
 		var target_id := enemy.get_instance_id()
@@ -89,7 +93,8 @@ func _hit_enemies_between(from_offset: float, to_offset: float) -> void:
 
 func _hit_projectiles_between(from_offset: float, to_offset: float) -> void:
 	var query_radius := host.collision_radius + attack_reach + 48.0
-	for projectile in world_state.enemy_projectiles_near(host.world_position, query_radius):
+	world_state.enemy_projectiles_near_into(host.world_position, query_radius, _projectile_query_buffer)
+	for projectile in _projectile_query_buffer:
 		if not is_instance_valid(projectile):
 			continue
 		var target_id := projectile.get_instance_id()
@@ -103,7 +108,8 @@ func _hit_projectiles_between(from_offset: float, to_offset: float) -> void:
 
 func _hit_destructibles_between(from_offset: float, to_offset: float) -> void:
 	var query_radius := host.collision_radius + attack_reach + 64.0
-	for prop in world_state.destructibles_near(host.world_position, query_radius):
+	world_state.destructibles_near_into(host.world_position, query_radius, _destructible_query_buffer)
+	for prop in _destructible_query_buffer:
 		if not is_instance_valid(prop):
 			continue
 		var target_id := prop.get_instance_id()

@@ -33,9 +33,47 @@ func _run() -> void:
 	grid.insert(near_object, Vector2(10.0, 10.0))
 	grid.insert(adjacent_object, Vector2(110.0, 10.0))
 	grid.insert(far_object, Vector2(510.0, 10.0))
+	_require(grid.cell_count() == 3, "SpatialGrid did not insert objects into their expected cells")
 	_require(grid.query(Vector2(50.0, 10.0), 100.0).size() == 2, "SpatialGrid queried cells outside the local neighborhood")
 	grid.update(far_object, Vector2(20.0, 10.0))
 	_require(grid.query(Vector2(50.0, 10.0), 60.0).has(far_object), "SpatialGrid did not move an object to its new cell")
+	_require(grid.cell_count() == 2, "SpatialGrid retained the empty cell after movement")
+	grid.remove(adjacent_object)
+	_require(not grid.query(Vector2(110.0, 10.0), 1.0).has(adjacent_object), "SpatialGrid did not remove an object")
+	grid.insert(adjacent_object, Vector2(110.0, 10.0))
+
+	var query_result := grid.query(Vector2(50.0, 10.0), 100.0)
+	var buffer_sentinel := Node.new()
+	root.add_child(buffer_sentinel)
+	var query_buffer: Array[Object] = [buffer_sentinel]
+	grid.query_into(Vector2(50.0, 10.0), 100.0, query_buffer)
+	_require(query_buffer.size() == query_result.size(), "query_into did not clear its caller-owned buffer")
+	for object in query_result:
+		_require(query_buffer.has(object), "query() and query_into() returned different objects")
+	var unique_ids: Dictionary[int, bool] = {}
+	for object in query_buffer:
+		unique_ids[object.get_instance_id()] = true
+	_require(unique_ids.size() == query_buffer.size(), "SpatialGrid returned one object more than once")
+
+	var invalid_object := Node.new()
+	grid.insert(invalid_object, Vector2(20.0, 20.0))
+	invalid_object.free()
+	grid.query_into(Vector2(20.0, 20.0), 1.0, query_buffer)
+	for object in query_buffer:
+		_require(is_instance_valid(object), "SpatialGrid returned an invalid object")
+
+	var negative_object := Node.new()
+	var left_boundary_object := Node.new()
+	var right_boundary_object := Node.new()
+	root.add_child(negative_object)
+	root.add_child(left_boundary_object)
+	root.add_child(right_boundary_object)
+	grid.insert(negative_object, Vector2(-1.0, -1.0))
+	grid.insert(left_boundary_object, Vector2(99.9, 0.0))
+	grid.insert(right_boundary_object, Vector2(100.0, 0.0))
+	_require(grid.query(Vector2(-1.0, -1.0), 0.0).has(negative_object), "SpatialGrid failed on negative coordinates")
+	var boundary_result := grid.query(Vector2(100.0, 0.0), 1.0)
+	_require(boundary_result.has(left_boundary_object) and boundary_result.has(right_boundary_object), "SpatialGrid failed across a cell boundary")
 
 	var player := PLAYER_SCENE.instantiate() as PlayerHero
 	player.configure_world(CONFIG)

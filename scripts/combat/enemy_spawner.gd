@@ -11,6 +11,8 @@ var world_state: WorldState
 var player: PlayerHero
 var world_root: Node2D
 var random := RandomNumberGenerator.new()
+var _enemy_query_buffer: Array[EnemyBase] = []
+var _obstacle_query_buffer: Array[WorldProp] = []
 
 func configure(
 	content: GameContent,
@@ -43,7 +45,9 @@ func spawn(enemy_id: StringName, difficulty: float = 1.0, requested_position := 
 		definition.collision_radius,
 		player.world_position,
 		player.collision_radius,
-		world_config.enemy_spawn_clearance
+		world_config.enemy_spawn_clearance,
+		_enemy_query_buffer,
+		_obstacle_query_buffer
 	):
 		return null
 	var enemy := definition.scene.instantiate() as EnemyBase
@@ -77,7 +81,9 @@ func _find_spawn_position(distance: float, spawn_radius: float) -> Vector2:
 			spawn_radius,
 			player.world_position,
 			player.collision_radius,
-			world_config.enemy_spawn_clearance
+			world_config.enemy_spawn_clearance,
+			_enemy_query_buffer,
+			_obstacle_query_buffer
 		):
 			return candidate
 	return Vector2.INF

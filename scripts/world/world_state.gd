@@ -38,11 +38,11 @@ func enemy_snapshot() -> Array[EnemyBase]:
 
 func enemies_near(world_position: Vector2, radius: float) -> Array[EnemyBase]:
 	var result: Array[EnemyBase] = []
-	for object in _enemy_grid.query(world_position, radius):
-		var enemy := object as EnemyBase
-		if enemy != null:
-			result.append(enemy)
+	enemies_near_into(world_position, radius, result)
 	return result
+
+func enemies_near_into(world_position: Vector2, radius: float, output: Array[EnemyBase]) -> void:
+	_enemy_grid.query_into(world_position, radius, output)
 
 func register_enemy_projectile(projectile: DeflectableProjectile) -> void:
 	if _enemy_projectiles.has(projectile):
@@ -70,11 +70,11 @@ func pickup_snapshot() -> Array[GamePickup]:
 
 func enemy_projectiles_near(world_position: Vector2, radius: float) -> Array[DeflectableProjectile]:
 	var result: Array[DeflectableProjectile] = []
-	for object in _enemy_projectile_grid.query(world_position, radius):
-		var projectile := object as DeflectableProjectile
-		if projectile != null:
-			result.append(projectile)
+	enemy_projectiles_near_into(world_position, radius, result)
 	return result
+
+func enemy_projectiles_near_into(world_position: Vector2, radius: float, output: Array[DeflectableProjectile]) -> void:
+	_enemy_projectile_grid.query_into(world_position, radius, output)
 
 func register_player_projectile(projectile: PlayerMagicProjectile) -> void:
 	if _player_projectiles.has(projectile):
@@ -115,19 +115,19 @@ func destructible_snapshot() -> Array[WorldProp]:
 
 func destructibles_near(world_position: Vector2, radius: float) -> Array[WorldProp]:
 	var result: Array[WorldProp] = []
-	for object in _destructible_grid.query(world_position, radius):
-		var prop := object as WorldProp
-		if prop != null:
-			result.append(prop)
+	destructibles_near_into(world_position, radius, result)
 	return result
+
+func destructibles_near_into(world_position: Vector2, radius: float, output: Array[WorldProp]) -> void:
+	_destructible_grid.query_into(world_position, radius, output)
 
 func obstacles_near(world_position: Vector2, radius: float) -> Array[WorldProp]:
 	var result: Array[WorldProp] = []
-	for object in _obstacle_grid.query(world_position, radius):
-		var prop := object as WorldProp
-		if prop != null:
-			result.append(prop)
+	obstacles_near_into(world_position, radius, result)
 	return result
+
+func obstacles_near_into(world_position: Vector2, radius: float, output: Array[WorldProp]) -> void:
+	_obstacle_grid.query_into(world_position, radius, output)
 
 func replace_world_props(props: Array[WorldProp]) -> void:
 	_destructibles.clear()
@@ -138,9 +138,10 @@ func replace_world_props(props: Array[WorldProp]) -> void:
 		if is_instance_valid(prop):
 			register_world_prop(prop)
 
-func enemy_separation(enemy: EnemyBase, search_radius: float) -> Vector2:
+func enemy_separation(enemy: EnemyBase, search_radius: float, query_buffer: Array[EnemyBase] = []) -> Vector2:
 	var correction := Vector2.ZERO
-	for neighbor in enemies_near(enemy.world_position, search_radius):
+	enemies_near_into(enemy.world_position, search_radius, query_buffer)
+	for neighbor in query_buffer:
 		if neighbor == enemy or not neighbor.is_alive:
 			continue
 		var offset := enemy.world_position - neighbor.world_position
@@ -155,30 +156,35 @@ func enemy_separation(enemy: EnemyBase, search_radius: float) -> Vector2:
 		correction += offset / distance * (1.0 - distance / minimum_distance)
 	return correction.normalized() if not correction.is_zero_approx() else Vector2.ZERO
 
-func resolve_obstacle_motion(from_position: Vector2, to_position: Vector2, radius: float) -> Vector2:
-	if not is_position_blocked(to_position, radius):
+func resolve_obstacle_motion(from_position: Vector2, to_position: Vector2, radius: float, obstacle_buffer: Array[WorldProp] = []) -> Vector2:
+	if not is_position_blocked(to_position, radius, obstacle_buffer):
 		return to_position
 	var slide_x := Vector2(to_position.x, from_position.y)
-	if not is_position_blocked(slide_x, radius):
+	if not is_position_blocked(slide_x, radius, obstacle_buffer):
 		return slide_x
 	var slide_y := Vector2(from_position.x, to_position.y)
-	if not is_position_blocked(slide_y, radius):
+	if not is_position_blocked(slide_y, radius, obstacle_buffer):
 		return slide_y
 	return from_position
 
-func is_position_blocked(world_position: Vector2, radius: float) -> bool:
-	for obstacle in obstacles_near(world_position, radius + 64.0):
-		if world_position.distance_to(obstacle.world_position) < radius + obstacle.collision_radius:
+func is_position_blocked(world_position: Vector2, radius: float, obstacle_buffer: Array[WorldProp] = []) -> bool:
+	obstacles_near_into(world_position, radius + 64.0, obstacle_buffer)
+	for obstacle in obstacle_buffer:
+		var minimum_distance := radius + obstacle.collision_radius
+		if world_position.distance_squared_to(obstacle.world_position) < minimum_distance * minimum_distance:
 			return true
 	return false
 
-func is_enemy_spawn_clear(world_position: Vector2, radius: float, player_position: Vector2, player_radius: float, clearance: float) -> bool:
-	if world_position.distance_to(player_position) < radius + player_radius + clearance:
+func is_enemy_spawn_clear(world_position: Vector2, radius: float, player_position: Vector2, player_radius: float, clearance: float, enemy_buffer: Array[EnemyBase] = [], obstacle_buffer: Array[WorldProp] = []) -> bool:
+	var player_clearance := radius + player_radius + clearance
+	if world_position.distance_squared_to(player_position) < player_clearance * player_clearance:
 		return false
-	if is_position_blocked(world_position, radius + clearance):
+	if is_position_blocked(world_position, radius + clearance, obstacle_buffer):
 		return false
-	for enemy in enemies_near(world_position, radius + clearance + 80.0):
-		if enemy.is_alive and world_position.distance_to(enemy.world_position) < radius + enemy.collision_radius + clearance:
+	enemies_near_into(world_position, radius + clearance + 80.0, enemy_buffer)
+	for enemy in enemy_buffer:
+		var enemy_clearance := radius + enemy.collision_radius + clearance
+		if enemy.is_alive and world_position.distance_squared_to(enemy.world_position) < enemy_clearance * enemy_clearance:
 			return false
 	return true
 

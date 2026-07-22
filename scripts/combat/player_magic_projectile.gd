@@ -15,6 +15,7 @@ var lifetime := 4.5
 var age := 0.0
 var world_state: WorldState
 var definition: SpellDefinition
+var _enemy_query_buffer: Array[EnemyBase] = []
 
 func setup(spell_definition: SpellDefinition, origin: Vector2, direction: Vector2, projectile_damage: float, level: int, state: WorldState) -> void:
 	definition = spell_definition
@@ -48,7 +49,8 @@ func _physics_process(delta: float) -> void:
 	var earliest_hit_fraction := 2.0
 	var segment_center := previous_position.lerp(next_position, 0.5)
 	var query_radius := previous_position.distance_to(next_position) * 0.5 + collision_radius + 70.0
-	for enemy in world_state.enemies_near(segment_center, query_radius):
+	world_state.enemies_near_into(segment_center, query_radius, _enemy_query_buffer)
+	for enemy in _enemy_query_buffer:
 		if not is_instance_valid(enemy) or not enemy.is_alive:
 			continue
 		var hit_fraction := CollisionMath.segment_circle_hit_fraction(
@@ -72,7 +74,8 @@ func _impact(target_enemy: EnemyBase) -> void:
 	if spell_kind == GameIds.SPELL_FIREBALL:
 		# Snapshot не меняется, если один из врагов погиб и удалился из реестра в ходе AoE.
 		var explosion_radius := definition.explosion_radius + float(spell_level - 1) * definition.explosion_radius_per_level
-		for enemy in world_state.enemies_near(world_position, explosion_radius + 70.0):
+		world_state.enemies_near_into(world_position, explosion_radius + 70.0, _enemy_query_buffer)
+		for enemy in _enemy_query_buffer:
 			if is_instance_valid(enemy) and enemy.is_alive and enemy.world_position.distance_to(world_position) <= explosion_radius + enemy.collision_radius:
 				enemy.take_damage(damage, direction)
 	else:

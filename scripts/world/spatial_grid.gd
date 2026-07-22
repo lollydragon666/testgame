@@ -50,16 +50,22 @@ func remove(object: Object) -> void:
 
 func query(world_position: Vector2, radius: float) -> Array[Object]:
 	var result: Array[Object] = []
+	query_into(world_position, radius, result)
+	return result
+
+func query_into(world_position: Vector2, radius: float, output: Array) -> void:
+	output.clear()
 	var center := _cell_for(world_position)
 	var cell_radius := ceili(maxf(0.0, radius) / cell_size)
 	for x_offset in range(-cell_radius, cell_radius + 1):
 		for y_offset in range(-cell_radius, cell_radius + 1):
 			var cell := center + Vector2i(x_offset, y_offset)
-			var bucket: Array = _cells.get(cell, [])
+			if not _cells.has(cell):
+				continue
+			var bucket: Array = _cells[cell]
 			for object in bucket:
 				if is_instance_valid(object):
-					result.append(object)
-	return result
+					output.append(object)
 
 func clear() -> void:
 	_cells.clear()

@@ -34,6 +34,8 @@ const VISUAL_DIRECTION_DOT_THRESHOLD := 0.9995
 var _last_visual_direction := Vector2.ZERO
 var _cached_separation := Vector2.ZERO
 var _separation_update_phase := 0
+var _nearby_enemy_buffer: Array[EnemyBase] = []
+var _obstacle_query_buffer: Array[WorldProp] = []
 @onready var visual_root: EnemyVisual = $VisualRoot
 @onready var hurtbox: EntityHurtbox = $Hurtbox
 
@@ -94,7 +96,7 @@ func update_separation_cache_for_frame(physics_frame: int) -> void:
 		return
 	var divisor := maxi(1, world_config.enemy_separation_update_divisor)
 	if posmod(physics_frame, divisor) == _separation_update_phase:
-		_cached_separation = world_state.enemy_separation(self, world_config.enemy_separation_radius)
+		_cached_separation = world_state.enemy_separation(self, world_config.enemy_separation_radius, _nearby_enemy_buffer)
 
 func separation_update_phase() -> int:
 	return _separation_update_phase
@@ -112,7 +114,7 @@ func _physics_process(delta: float) -> void:
 	if world_state != null:
 		update_separation_cache_for_frame(Engine.get_physics_frames())
 		world_position += _cached_separation * world_config.enemy_separation_speed * delta
-		world_position = world_state.resolve_obstacle_motion(previous_position, world_position, collision_radius)
+		world_position = world_state.resolve_obstacle_motion(previous_position, world_position, collision_radius, _obstacle_query_buffer)
 	world_position = world_position.clamp(
 		Vector2.ONE * -world_config.world_limit,
 		Vector2.ONE * world_config.world_limit
@@ -148,7 +150,7 @@ func take_damage(amount: float, knockback_direction: Vector2 = Vector2.ZERO) -> 
 	refresh_visual()
 	world_position += knockback_direction.normalized() * 18.0
 	if world_state != null:
-		world_position = world_state.resolve_obstacle_motion(world_position - knockback_direction.normalized() * 18.0, world_position, collision_radius)
+		world_position = world_state.resolve_obstacle_motion(world_position - knockback_direction.normalized() * 18.0, world_position, collision_radius, _obstacle_query_buffer)
 		world_state.update_enemy(self)
 	if health <= 0.0:
 		is_alive = false
