@@ -14,6 +14,8 @@ const SAVE_PATH := "user://player_profile.json"
 
 var profile := PlayerProfile.new()
 var inventory := InventoryService.new()
+var run_inventory := RunInventoryService.new()
+var run_context := RunContext.new()
 var shop_service := ShopService.new()
 var selected_location_id: StringName = &"test_location"
 var selected_location_tier := 1
@@ -24,6 +26,7 @@ var current_mode := Mode.MENU
 func _ready() -> void:
 	load_profile()
 	_configure_inventory()
+	run_inventory.configure(GAME_CONTENT)
 
 func _configure_inventory() -> void:
 	inventory = InventoryService.new()
@@ -76,6 +79,8 @@ func load_profile(path := SAVE_PATH) -> bool:
 func reset_profile(path := SAVE_PATH) -> bool:
 	profile = PlayerProfile.new()
 	_configure_inventory()
+	run_inventory.configure(GAME_CONTENT)
+	run_context = RunContext.new()
 	selected_location_id = &"test_location"
 	selected_location_tier = 1
 	current_run_seed = 0
@@ -96,11 +101,22 @@ func enter_combat_sandbox() -> void:
 	current_mode = Mode.COMBAT_SANDBOX
 
 func begin_expedition(location_id: StringName) -> bool:
+	if run_context.state == RunContext.RunState.ACTIVE or run_context.state == RunContext.RunState.SUCCESS_PENDING:
+		return false
 	var requested_tier := selected_location_tier if selected_location_id == location_id else 1
 	if not select_expedition(location_id, requested_tier):
 		return false
 	last_expedition_result = null
+	if not start_new_run():
+		return false
 	current_mode = Mode.EXPEDITION
+	return true
+
+func start_new_run() -> bool:
+	if run_context.state == RunContext.RunState.ACTIVE or run_context.state == RunContext.RunState.SUCCESS_PENDING:
+		return false
+	run_inventory.clear()
+	run_context = RunContext.create(inventory.serialized_equipment())
 	return true
 
 func select_expedition(location_id: StringName, tier: int) -> bool:
@@ -159,6 +175,8 @@ func purchase_health_upgrade() -> bool:
 func reset_profile_for_tests() -> void:
 	profile = PlayerProfile.new()
 	_configure_inventory()
+	run_inventory.configure(GAME_CONTENT)
+	run_context = RunContext.new()
 	selected_location_id = &"test_location"
 	selected_location_tier = 1
 	current_run_seed = 0
