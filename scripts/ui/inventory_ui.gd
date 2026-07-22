@@ -206,7 +206,7 @@ func _rebuild_item_grid() -> void:
 		var selected_marker := "◆ " if item.instance_id == selected_instance_id else ""
 		var quantity_text := " ×%d" % item.quantity if item.quantity > 1 else ""
 		var equipped_text := "\n[НАДЕТО]" if inventory.is_equipped(item.instance_id) else ""
-		var source_text := "\n[ОЖИДАЕТ РАЗБОРА]" if pending_rewards != null and pending_rewards.find_item(item.instance_id) != null else ("\n[ДОБЫЧА ЗАБЕГА]" if inventory.is_run_item(item.instance_id) else "")
+		var source_text := "\n[ОЖИДАЕТ РАЗБОРА]" if pending_rewards != null and pending_rewards.find_item(item.instance_id) != null else ""
 		var item_button := _button("%s%s\n%s · ур. %d%s%s%s" % [
 			selected_marker,
 			ItemRarityPresentation.display_name(item, definition),
@@ -365,7 +365,7 @@ func _item_source_text(instance_id: String) -> String:
 	if pending_rewards != null and pending_rewards.find_item(instance_id) != null:
 		return "[color=#d49a3a]ЭВАКУИРОВАНО · ОЖИДАЕТ РАЗБОРА[/color]"
 	if inventory.is_run_item(instance_id):
-		return "[color=#d49a3a]ВРЕМЕННАЯ ДОБЫЧА ЗАБЕГА[/color]"
+		return ""
 	return "[color=#8f7c61]ПОСТОЯННЫЙ ПРЕДМЕТ[/color]"
 
 func _equipped_slot_for(instance_id: String) -> ItemEnums.EquipmentSlot:

@@ -41,7 +41,7 @@ func setup(
 func _ready() -> void:
 	add_to_group(&"world_item_drop")
 	_name_label = Label.new()
-	_name_label.text = "%s\n[ДОБЫЧА ЗАБЕГА]" % (definition.display_name if definition != null else "Предмет") if run_inventory != null else (definition.display_name if definition != null else "Предмет")
+	_name_label.text = definition.display_name if definition != null else "Предмет"
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_label.position = Vector2(-100.0, -49.0)
 	_name_label.size = Vector2(200.0, 24.0)
