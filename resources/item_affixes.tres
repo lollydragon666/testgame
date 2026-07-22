@@ -1,0 +1,95 @@
+[gd_resource type="Resource" script_class="ItemAffixCatalog" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_affix_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/items/item_affix_definition.gd" id="2_affix"]
+
+[sub_resource type="Resource" id="Sturdy"]
+script = ExtResource("2_affix")
+id = &"sturdy"
+display_name = "Крепкий"
+allowed_item_types = Array[int]([1, 2])
+stat = 1
+min_value = 4.0
+max_value = 22.0
+weight = 1.0
+
+[sub_resource type="Resource" id="Sharp"]
+script = ExtResource("2_affix")
+id = &"sharp"
+display_name = "Острый"
+allowed_item_types = Array[int]([0, 2])
+stat = 0
+min_value = 0.05
+max_value = 0.18
+weight = 1.0
+is_percentage = true
+
+[sub_resource type="Resource" id="Swift"]
+script = ExtResource("2_affix")
+id = &"swift"
+display_name = "Быстрый"
+allowed_item_types = Array[int]([0, 2])
+stat = 4
+min_value = 0.04
+max_value = 0.14
+weight = 0.9
+is_percentage = true
+
+[sub_resource type="Resource" id="Vital"]
+script = ExtResource("2_affix")
+id = &"vital"
+display_name = "Живучий"
+allowed_item_types = Array[int]([1, 2])
+stat = 2
+min_value = 10.0
+max_value = 50.0
+weight = 1.0
+
+[sub_resource type="Resource" id="Light"]
+script = ExtResource("2_affix")
+id = &"light"
+display_name = "Лёгкий"
+allowed_item_types = Array[int]([1, 2])
+stat = 3
+min_value = 0.03
+max_value = 0.12
+weight = 0.9
+is_percentage = true
+
+[sub_resource type="Resource" id="Lucky"]
+script = ExtResource("2_affix")
+id = &"lucky"
+display_name = "Счастливый"
+allowed_item_types = Array[int]([0, 1, 2])
+stat = 7
+min_value = 0.05
+max_value = 0.20
+weight = 0.7
+is_percentage = true
+
+[sub_resource type="Resource" id="Precise"]
+script = ExtResource("2_affix")
+id = &"precise"
+display_name = "Меткий"
+allowed_item_types = Array[int]([0, 2])
+stat = 5
+min_value = 0.03
+max_value = 0.12
+weight = 0.8
+is_percentage = true
+
+[sub_resource type="Resource" id="Destructive"]
+script = ExtResource("2_affix")
+id = &"destructive"
+display_name = "Разрушительный"
+allowed_item_types = Array[int]([0, 2])
+stat = 6
+min_value = 0.10
+max_value = 0.35
+weight = 0.65
+is_percentage = true
+
+[resource]
+script = ExtResource("1_catalog")
+definitions = Array[ItemAffixDefinition]([SubResource("Sturdy"), SubResource("Sharp"), SubResource("Swift"), SubResource("Vital"), SubResource("Light"), SubResource("Lucky"), SubResource("Precise"), SubResource("Destructive")])
+

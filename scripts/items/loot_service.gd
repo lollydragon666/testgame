@@ -8,9 +8,11 @@ const MAX_WORLD_ITEM_DROPS := 60
 
 var game_content: GameContent
 var _active_drops: Array[WorldItemDrop] = []
+var affix_generator := ItemAffixGenerator.new()
 
 func configure(content: GameContent) -> void:
 	game_content = content
+	affix_generator.configure(content.item_affixes if content != null else null)
 
 func roll_for_enemy(
 	enemy: EnemyBase,
@@ -37,7 +39,9 @@ func roll_for_enemy(
 	if definition == null:
 		return result
 	var quantity := rng.randi_range(maxi(1, entry.min_quantity), maxi(entry.min_quantity, entry.max_quantity))
-	result.append(ItemInstance.create(definition.id, quantity, definition.rarity))
+	var item := ItemInstance.create(definition.id, quantity, definition.rarity)
+	affix_generator.apply_to_item(item, definition, wave, rng)
+	result.append(item)
 	return result
 
 func _roll_definition(entry: LootTableEntry, wave: int, rng: RandomNumberGenerator) -> ItemDefinition:
@@ -84,4 +88,3 @@ func _prune_drops() -> void:
 
 func _on_drop_exiting(drop: WorldItemDrop) -> void:
 	_active_drops.erase(drop)
-

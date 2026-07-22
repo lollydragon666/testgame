@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="GameContent" load_steps=39 format=3]
+[gd_resource type="Resource" script_class="GameContent" load_steps=40 format=3]
 
 [ext_resource type="Script" path="res://scripts/content/game_content.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/content/enemies/brawler.tres" id="2"]
@@ -38,6 +38,7 @@
 [ext_resource type="Resource" path="res://resources/content/loot/normal.tres" id="36"]
 [ext_resource type="Resource" path="res://resources/content/loot/elite.tres" id="37"]
 [ext_resource type="Resource" path="res://resources/content/loot/boss.tres" id="38"]
+[ext_resource type="Resource" path="res://resources/item_affixes.tres" id="39"]
 
 [resource]
 script = ExtResource("1")
@@ -51,3 +52,4 @@ locations = Array[LocationDefinition]([ExtResource("31")])
 item_catalog = ExtResource("32")
 shops = Array[ShopDefinition]([ExtResource("33"), ExtResource("34"), ExtResource("35")])
 loot_tables = Array[LootTable]([ExtResource("36"), ExtResource("37"), ExtResource("38")])
+item_affixes = ExtResource("39")

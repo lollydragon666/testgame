@@ -11,6 +11,7 @@ extends Resource
 @export var item_catalog: ItemCatalog
 @export var shops: Array[ShopDefinition] = []
 @export var loot_tables: Array[LootTable] = []
+@export var item_affixes: ItemAffixCatalog
 
 func enemy(id: StringName) -> EnemyDefinition:
 	for definition in enemies:
@@ -50,6 +51,9 @@ func loot_table(id: StringName) -> LootTable:
 		if definition != null and definition.id == id:
 			return definition
 	return null
+
+func item_affix(id: StringName) -> ItemAffixDefinition:
+	return item_affixes.definition(id) if item_affixes != null else null
 
 func upgrade(id: StringName) -> UpgradeDefinition:
 	for definition in upgrades:
