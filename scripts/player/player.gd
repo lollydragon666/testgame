@@ -33,6 +33,8 @@ var invulnerability := 0.0
 var is_alive := true
 ## Runtime-множитель общего урона меча и магии. POWER добавляет по 0.15.
 var power_multiplier := 1.0
+## Постоянный множитель профиля хранится отдельно от временного POWER забега.
+var profile_damage_multiplier := 1.0
 ## Runtime-множитель перезарядки атак. HASTE умножает его на 0.90.
 var haste_cooldown_multiplier := 1.0
 ## Доля поглощаемого входящего урона, ограниченная 40%.
@@ -236,6 +238,12 @@ func can_upgrade_armor() -> bool:
 func upgrade_magnet() -> void:
 	magnet_range_bonus += 35.0
 
+func apply_profile_bonuses(max_health_bonus: float, damage_bonus: float) -> void:
+	max_health += maxf(0.0, max_health_bonus)
+	health = max_health
+	profile_damage_multiplier = maxf(0.0, 1.0 + damage_bonus)
+	health_changed.emit(health, max_health)
+
 func reset_run() -> void:
 	world_position = Vector2.ZERO
 	position = Vector2.ZERO
@@ -250,6 +258,7 @@ func reset_run() -> void:
 	invulnerability = 0.0
 	is_alive = true
 	power_multiplier = 1.0
+	profile_damage_multiplier = 1.0
 	haste_cooldown_multiplier = 1.0
 	armor_damage_reduction = 0.0
 	magnet_range_bonus = 0.0

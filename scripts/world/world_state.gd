@@ -62,6 +62,12 @@ func unregister_enemy_projectile(projectile: DeflectableProjectile) -> void:
 func enemy_projectile_snapshot() -> Array[DeflectableProjectile]:
 	return _enemy_projectiles.duplicate()
 
+func player_projectile_snapshot() -> Array[PlayerMagicProjectile]:
+	return _player_projectiles.duplicate()
+
+func pickup_snapshot() -> Array[GamePickup]:
+	return _pickups.duplicate()
+
 func enemy_projectiles_near(world_position: Vector2, radius: float) -> Array[DeflectableProjectile]:
 	var result: Array[DeflectableProjectile] = []
 	for object in _enemy_projectile_grid.query(world_position, radius):
@@ -176,13 +182,22 @@ func is_enemy_spawn_clear(world_position: Vector2, radius: float, player_positio
 			return false
 	return true
 
-func clear_runtime() -> void:
+func clear_enemies() -> void:
 	_enemies.clear()
+	_enemy_grid.clear()
+
+func clear_projectiles() -> void:
 	_enemy_projectiles.clear()
 	_player_projectiles.clear()
-	_pickups.clear()
-	_enemy_grid.clear()
 	_enemy_projectile_grid.clear()
+
+func clear_pickups() -> void:
+	_pickups.clear()
+
+func clear_runtime() -> void:
+	clear_enemies()
+	clear_projectiles()
+	clear_pickups()
 
 func enemy_count() -> int:
 	return _enemies.size()

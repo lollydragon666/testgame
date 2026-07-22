@@ -156,7 +156,9 @@ func can_upgrade_sword() -> bool:
 	return definition != null and sword_tier < definition.max_tier
 
 func effective_damage() -> float:
-	return damage * (host.power_multiplier if host != null else 1.0)
+	if host == null:
+		return damage
+	return damage * host.profile_damage_multiplier * host.power_multiplier
 
 func effective_cooldown_duration() -> float:
 	var haste_multiplier := host.haste_cooldown_multiplier if host != null else 1.0

@@ -1,6 +1,11 @@
 class_name GameMain
 extends Node2D
 
+signal run_setup_requested(player: PlayerHero)
+signal run_started
+signal run_finished(victory: bool)
+signal result_action_requested
+
 const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 const LOCATION_SCENE := preload("res://scenes/world/location.tscn")
 ## Один ресурс баланса передаётся всем системам, чтобы границы и интервалы не расходились.
@@ -10,6 +15,7 @@ const GAME_CONTENT: GameContent = preload("res://resources/game_content.tres")
 var location: GameLocation
 var player: PlayerHero
 var wave_manager: WaveManager
+var enemy_spawner: EnemySpawner
 var ui: GameUI
 @onready var floor_layer: Node2D = $FloorLayer
 ## Герой, враги, предметы и пропсы находятся здесь и сортируются по Y.
@@ -20,6 +26,11 @@ var ui: GameUI
 var world_state: WorldState
 ## Фабрика врагов: GameIds связывает вид противника с его PackedScene.
 var running := false
+var mode_config: CombatModeConfig
+var auto_start_on_ready := false
+var run_seed := 0
+var defeated_enemies := 0
+var run_duration_seconds := 0.0
 ## Число повышений, за которые игрок ещё не выбрал усиление.
 var pending_level_ups := 0
 ## Не более трёх ID, показанных в текущем окне. Только они принимаются _apply_upgrade().
@@ -27,8 +38,17 @@ var current_upgrade_choices: Array[StringName] = []
 
 const MAX_UPGRADE_CHOICES := 3
 
+func configure_mode(config: CombatModeConfig, start_automatically := true) -> void:
+	mode_config = config
+	auto_start_on_ready = start_automatically
+
+func configure_run_seed(value: int) -> void:
+	run_seed = value
+
 func _ready() -> void:
 	randomize()
+	if mode_config == null:
+		mode_config = CombatModeConfig.expedition()
 	world_state = WorldState.new()
 	world_state.name = "WorldState"
 	world_state.configure(WORLD_CONFIG)
@@ -56,6 +76,14 @@ func _ready() -> void:
 	player.died.connect(_on_player_died)
 	player.set_gameplay_active(false)
 
+	enemy_spawner = EnemySpawner.new()
+	enemy_spawner.name = "EnemySpawner"
+	enemy_spawner.configure(GAME_CONTENT, WORLD_CONFIG, world_state, player, world_root)
+	enemy_spawner.enemy_died.connect(_on_enemy_died)
+	enemy_spawner.projectile_requested.connect(_spawn_projectile)
+	enemy_spawner.spell_requested.connect(_spawn_enemy_spell)
+	add_child(enemy_spawner)
+
 	wave_manager = WaveManager.new()
 	wave_manager.name = "WaveManager"
 	add_child(wave_manager)
@@ -71,28 +99,46 @@ func _ready() -> void:
 	add_child(ui)
 	ui.start_requested.connect(_start_run)
 	ui.upgrade_selected.connect(_apply_upgrade)
+	ui.game_over_action_requested.connect(_on_game_over_action)
 	ui.set_health(player.health, player.max_health)
 	ui.set_experience(player.experience, player.experience_required, player.level)
 	ui.set_wave(1)
 	ui.set_magic(&"", 0)
 	ui.set_dash_status(0.0, PlayerHero.DASH_COOLDOWN, false)
+	if auto_start_on_ready:
+		_start_run.call_deferred()
+
+func _physics_process(delta: float) -> void:
+	if running:
+		run_duration_seconds += delta
+
+func start_run() -> void:
+	_start_run()
 
 func _start_run() -> void:
 	get_tree().paused = false
 	pending_level_ups = 0
 	current_upgrade_choices.clear()
 	_clear_runtime_nodes()
-	location.regenerate()
+	location.regenerate(run_seed)
 	_register_location_destructibles()
 	player.reset_run()
+	run_setup_requested.emit(player)
 	player.set_gameplay_active(true)
 	running = true
-	wave_manager.start_run()
+	defeated_enemies = 0
+	run_duration_seconds = 0.0
+	if mode_config.enable_auto_waves:
+		wave_manager.start_run()
+	else:
+		wave_manager.stop()
+		ui.set_wave(1)
 	ui.show_game()
+	run_started.emit()
 
 func _clear_runtime_nodes() -> void:
 	# Группы используются только для редкой массовой очистки между забегами.
-	for group_name in [&"enemy", &"enemy_projectile", &"player_magic_projectile", &"pickup"]:
+	for group_name in [&"enemy", &"enemy_projectile", &"player_magic_projectile", &"pickup", &"temporary_effect"]:
 		_clear_group(group_name)
 	world_state.clear_runtime()
 
@@ -104,42 +150,9 @@ func _clear_group(group_name: StringName) -> void:
 			node.queue_free()
 
 func _spawn_enemy(enemy_kind: StringName, difficulty: float) -> void:
-	if not running or world_state.enemy_count() >= WORLD_CONFIG.max_active_enemies:
+	if not running:
 		return
-	var definition := GAME_CONTENT.enemy(enemy_kind)
-	if definition == null or definition.scene == null:
-		push_error("Unknown enemy kind: %s" % enemy_kind)
-		return
-	var enemy: EnemyBase = definition.scene.instantiate() as EnemyBase
-	if enemy == null:
-		push_error("Enemy scene does not contain EnemyBase: %s" % enemy_kind)
-		return
-	var spawn_position := _find_spawn_position(definition.spawn_distance, definition.collision_radius)
-	if not spawn_position.is_finite():
-		return
-	enemy.setup(player, spawn_position, difficulty, WORLD_CONFIG, definition)
-	enemy.died.connect(_on_enemy_died)
-	enemy.projectile_requested.connect(_spawn_projectile)
-	enemy.spell_requested.connect(_spawn_enemy_spell)
-	world_state.register_enemy(enemy)
-	world_root.add_child(enemy)
-
-func _find_spawn_position(distance: float, spawn_radius: float = 24.0) -> Vector2:
-	# Несколько попыток сохраняют нужную дистанцию даже рядом с краем ограниченного мира.
-	var map_limit := maxf(0.0, WORLD_CONFIG.world_limit - WORLD_CONFIG.safe_spawn_margin)
-	var minimum_distance := distance * 0.85
-	for _attempt in 16:
-		var candidate := player.world_position + Vector2.from_angle(randf_range(0.0, TAU)) * distance
-		candidate = candidate.clamp(Vector2.ONE * -map_limit, Vector2.ONE * map_limit)
-		if candidate.distance_to(player.world_position) >= minimum_distance and world_state.is_enemy_spawn_clear(
-			candidate,
-			spawn_radius,
-			player.world_position,
-			player.collision_radius,
-			WORLD_CONFIG.enemy_spawn_clearance
-		):
-			return candidate
-	return Vector2.INF
+	enemy_spawner.spawn(enemy_kind, difficulty)
 
 func _spawn_projectile(origin: Vector2, direction: Vector2, damage: float) -> void:
 	if not running or not world_state.can_spawn_enemy_projectile(WORLD_CONFIG):
@@ -196,16 +209,17 @@ func _spawn_experience(spawn_position: Vector2, amount: int) -> void:
 
 func _on_enemy_died(enemy: EnemyBase, experience_value: int) -> void:
 	world_state.unregister_enemy(enemy)
+	defeated_enemies += 1
 	if enemy.definition != null and enemy.definition.is_boss:
-		_finish_run(true)
+		if wave_manager.running:
+			_finish_run(true)
 		return
 	if running:
 		_spawn_experience(enemy.world_position, experience_value)
 
 func _start_boss(enemy_kind: StringName, difficulty: float) -> void:
-	_clear_group(&"enemy")
-	_clear_group(&"enemy_projectile")
-	world_state.clear_runtime()
+	clear_enemies()
+	clear_projectiles()
 	_spawn_enemy(enemy_kind, difficulty)
 
 func _on_health_changed(current: float, maximum: float) -> void:
@@ -222,7 +236,7 @@ func _on_combat_phase_changed(phase: int) -> void:
 		ui.set_boss_state()
 
 func _on_level_up(_level: int) -> void:
-	if not running:
+	if not running or not mode_config.enable_level_up_choices:
 		return
 	pending_level_ups += 1
 	if pending_level_ups == 1:
@@ -270,8 +284,22 @@ func _random_upgrade_choices(available_upgrades: Array[StringName]) -> Array[Str
 func _apply_upgrade(kind: StringName) -> bool:
 	if pending_level_ups <= 0 or not current_upgrade_choices.has(kind):
 		return false
+	if not _apply_upgrade_effect(kind):
+		return false
+	current_upgrade_choices.clear()
+	pending_level_ups -= 1
+	if pending_level_ups > 0:
+		_show_next_level_up()
+	else:
+		ui.hide_upgrade()
+		get_tree().paused = false
+	return true
+
+func _apply_upgrade_effect(kind: StringName) -> bool:
 	match kind:
 		GameIds.UPGRADE_SWORD:
+			if not player.attack.can_upgrade_sword():
+				return false
 			player.attack.upgrade_sword()
 		GameIds.UPGRADE_SPEED:
 			player.upgrade_speed()
@@ -282,22 +310,17 @@ func _apply_upgrade(kind: StringName) -> bool:
 		GameIds.UPGRADE_HASTE:
 			player.upgrade_haste()
 		GameIds.UPGRADE_ARMOR:
+			if not player.can_upgrade_armor():
+				return false
 			player.upgrade_armor()
 		GameIds.UPGRADE_MAGNET:
 			player.upgrade_magnet()
 		_:
 			var definition := GAME_CONTENT.upgrade(kind)
 			if definition == null or definition.spell_id.is_empty():
-				push_error("Unknown upgrade kind: %s" % kind)
+				push_warning("Unknown upgrade ID: %s" % kind)
 				return false
-			player.magic.unlock_or_upgrade(definition.spell_id)
-	current_upgrade_choices.clear()
-	pending_level_ups -= 1
-	if pending_level_ups > 0:
-		_show_next_level_up()
-	else:
-		ui.hide_upgrade()
-		get_tree().paused = false
+			return player.magic.unlock_or_upgrade(definition.spell_id)
 	return true
 
 func _on_magic_changed(spell_kind: StringName, spell_level: int) -> void:
@@ -311,6 +334,8 @@ func _on_player_died() -> void:
 	_finish_run(false)
 
 func _finish_run(victory: bool) -> void:
+	if not running:
+		return
 	running = false
 	pending_level_ups = 0
 	current_upgrade_choices.clear()
@@ -318,4 +343,71 @@ func _finish_run(victory: bool) -> void:
 	player.set_gameplay_active(false)
 	_clear_runtime_nodes()
 	get_tree().paused = false
-	ui.show_game_over(victory)
+	var action_text := "ВЕРНУТЬСЯ В ХАБ" if mode_config.mode_id == CombatModeConfig.MODE_EXPEDITION else "ПЕРЕЗАПУСТИТЬ АРЕНУ"
+	ui.show_game_over(victory, action_text)
+	run_finished.emit(victory)
+
+func _on_game_over_action() -> void:
+	if auto_start_on_ready:
+		result_action_requested.emit()
+	else:
+		_start_run()
+
+func set_auto_waves(enabled: bool) -> void:
+	mode_config.enable_auto_waves = enabled
+	if not running:
+		return
+	if enabled:
+		wave_manager.start_run()
+	else:
+		wave_manager.stop()
+
+func current_wave() -> int:
+	return wave_manager.wave if wave_manager != null else 1
+
+func debug_spawn_enemy(enemy_id: StringName, count: int = 1) -> int:
+	if not running or enemy_spawner == null or GAME_CONTENT.enemy(enemy_id) == null:
+		return 0
+	return enemy_spawner.spawn_many(enemy_id, count)
+
+func debug_apply_upgrade(upgrade_id: StringName) -> bool:
+	if not running or GAME_CONTENT.upgrade(upgrade_id) == null:
+		return false
+	return _apply_upgrade_effect(upgrade_id)
+
+func debug_give_experience(amount: int) -> void:
+	if running and amount > 0:
+		player.add_experience(amount)
+
+func restore_player() -> void:
+	player.is_alive = true
+	player.health = player.max_health
+	player.invulnerability = 0.0
+	player.health_changed.emit(player.health, player.max_health)
+	player.set_gameplay_active(running)
+
+func clear_enemies() -> void:
+	_clear_group(&"enemy")
+	world_state.clear_enemies()
+
+func clear_projectiles() -> void:
+	_clear_group(&"enemy_projectile")
+	_clear_group(&"player_magic_projectile")
+	world_state.clear_projectiles()
+
+func clear_pickups() -> void:
+	_clear_group(&"pickup")
+	world_state.clear_pickups()
+
+func shutdown() -> void:
+	running = false
+	pending_level_ups = 0
+	current_upgrade_choices.clear()
+	if wave_manager != null:
+		wave_manager.stop()
+	if player != null:
+		player.set_gameplay_active(false)
+	if world_state != null:
+		_clear_runtime_nodes()
+	if get_tree() != null:
+		get_tree().paused = false

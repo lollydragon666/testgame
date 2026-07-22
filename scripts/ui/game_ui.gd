@@ -8,6 +8,7 @@ enum CombatDisplayState {
 
 signal start_requested
 signal upgrade_selected(kind: StringName)
+signal game_over_action_requested
 
 ## Небольшая блокировка предотвращает случайный выбор кнопкой, открывшей окно уровня.
 const UPGRADE_INPUT_DELAY := 0.20
@@ -26,6 +27,8 @@ var level_label: Label
 var magic_label: Label
 var dash_label: Label
 var game_over_title: Label
+var game_over_details: Label
+var game_over_action_button: Button
 var upgrade_buttons: Dictionary[StringName, Button] = {}
 var upgrade_delay_timer: Timer
 ## Пока true, кнопки улучшений игнорируют ввод.
@@ -242,9 +245,13 @@ func _build_game_over_panel() -> void:
 	game_over_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	game_over_title.add_theme_font_size_override("font_size", 38)
 	box.add_child(game_over_title)
-	var restart := _button("НОВЫЙ ПОХОД")
-	restart.pressed.connect(func(): start_requested.emit())
-	box.add_child(restart)
+	game_over_details = Label.new()
+	game_over_details.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	game_over_details.add_theme_color_override("font_color", Color("d4c4a4"))
+	box.add_child(game_over_details)
+	game_over_action_button = _button("НОВЫЙ ПОХОД")
+	game_over_action_button.pressed.connect(func(): game_over_action_requested.emit())
+	box.add_child(game_over_action_button)
 
 func _button(text_value: String) -> Button:
 	var button := Button.new()
@@ -292,10 +299,12 @@ func hide_upgrade() -> void:
 	upgrade_panel.visible = false
 	hud.visible = true
 
-func show_game_over(victory: bool = false) -> void:
+func show_game_over(victory: bool = false, action_text := "НОВЫЙ ПОХОД", details := "") -> void:
 	upgrade_delay_timer.stop()
 	upgrade_selection_locked = true
 	game_over_title.text = "БЕЗДНА ПОВЕРЖЕНА" if victory else "ГЕРОЙ ПАЛ"
+	game_over_details.text = details
+	game_over_action_button.text = action_text
 	menu.visible = false
 	hud.visible = false
 	upgrade_panel.visible = false
