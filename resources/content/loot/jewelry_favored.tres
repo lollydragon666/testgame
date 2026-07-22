@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=6 format=3]
+[ext_resource type="Script" path="res://scripts/items/loot_table.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/items/loot_table_entry.gd" id="2"]
+[sub_resource type="Resource" id="Consumables"]
+script = ExtResource("2")
+item_type = 3
+weight = 35.0
+[sub_resource type="Resource" id="Weapons"]
+script = ExtResource("2")
+item_type = 0
+weight = 12.0
+[sub_resource type="Resource" id="Armor"]
+script = ExtResource("2")
+item_type = 1
+weight = 18.0
+[sub_resource type="Resource" id="Jewelry"]
+script = ExtResource("2")
+item_type = 2
+weight = 35.0
+[resource]
+script = ExtResource("1")
+id = &"jewelry_favored"
+base_drop_chance = 0.09
+entries = Array[LootTableEntry]([SubResource("Consumables"), SubResource("Weapons"), SubResource("Armor"), SubResource("Jewelry")])
+

@@ -24,4 +24,4 @@ experience_value = 58
 introduced_wave = 12
 spawn_weight = 0.16
 max_alive = 2
-
+loot_table_id = &"mystic_favored"

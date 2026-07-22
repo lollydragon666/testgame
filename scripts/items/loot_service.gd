@@ -24,7 +24,9 @@ func roll_for_enemy(
 	var result: Array[ItemInstance] = []
 	if enemy == null or enemy.definition == null or game_content == null or rng == null:
 		return result
-	var table_id := NORMAL_TABLE_ID
+	if not enemy.definition.grants_loot:
+		return result
+	var table_id := enemy.definition.loot_table_id if not enemy.definition.loot_table_id.is_empty() else NORMAL_TABLE_ID
 	if enemy.definition.is_boss:
 		table_id = BOSS_TABLE_ID
 	elif enemy.is_elite:

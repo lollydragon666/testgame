@@ -25,4 +25,4 @@ experience_value = 36
 introduced_wave = 4
 spawn_weight = 0.45
 max_alive = 3
-
+loot_table_id = &"armor_favored"

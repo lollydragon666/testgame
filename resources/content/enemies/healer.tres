@@ -25,4 +25,4 @@ experience_value = 42
 introduced_wave = 8
 spawn_weight = 0.25
 max_alive = 2
-
+loot_table_id = &"jewelry_favored"
