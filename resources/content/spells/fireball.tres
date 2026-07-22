@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SpellDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/spell_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"fireball"
+display_name = "ФАЕРБОЛ — красный взрывной шар"
+base_damage = 42.0
+damage_per_level = 11.0
+base_cooldown = 0.95
+cooldown_reduction_per_level = 0.05
+minimum_cooldown = 0.48
+base_speed = 330.0
+speed_per_level = 10.0
+visual_radius = 18.0
+collision_radius = 18.0
+radius_per_level = 1.2
+lifetime = 5.0
+explosion_radius = 82.0
+explosion_radius_per_level = 8.0
+

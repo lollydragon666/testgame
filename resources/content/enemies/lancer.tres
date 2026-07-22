@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/enemy_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/lancer_enemy.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"lancer"
+scene = ExtResource("2")
+visual_radius = 27.0
+collision_radius = 27.0
+max_health = 96.0
+move_speed = 70.0
+contact_damage = 18.0
+experience_value = 30
+
