@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PropDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/prop_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"barrel"
+style = &"barrel"
+spawn_count = 64
+visual_radius = 25.0
+collision_radius = 25.0
+potion_chance = 0.42
+base_color = Color(0.443, 0.278, 0.145, 1)
+secondary_color = Color(0.208, 0.153, 0.114, 1)
+accent_color = Color(0.659, 0.529, 0.302, 1)
+visual_height = 52.0

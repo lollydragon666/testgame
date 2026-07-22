@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PropDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/prop_definition.gd" id="1"]
+[resource]
+script=ExtResource("1")
+id=&"dry_bush"
+style=&"dry_bush"
+spawn_count=30
+visual_radius=27.0
+collision_radius=18.0
+destructible=false
+base_color=Color(0.35,0.25,0.14,1)
+blocks_navigation=false
+visual_height=35.0
+

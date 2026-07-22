@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/weapon_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"player_sword"
+display_name = "Учебный меч"
+description = "Простой клинок охотника. Его нельзя продать."
+item_type = 0
+equipment_slot = 1
+rarity = 0
+base_price = 0
+sell_price = 0
+stackable = false
+max_stack = 1
+visual_style = &"gladius"
+sort_order = 1
+can_sell = false
+minimum_wave = 1

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ExpeditionTierDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/expedition_tier_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tier = 7
+display_name = "Ступень VII"
+wave_count = 10
+difficulty_multiplier = 1.78
+enemy_count_multiplier = 1.4
+spawn_rate_multiplier = 1.28
+guaranteed_elite_count = 6
+elite_chance = 0.09
+reward_gold = 180
+repeat_reward_multiplier = 0.5

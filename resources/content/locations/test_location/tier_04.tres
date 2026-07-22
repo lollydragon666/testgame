@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ExpeditionTierDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/expedition_tier_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tier = 4
+display_name = "Ступень IV"
+wave_count = 6
+difficulty_multiplier = 1.32
+enemy_count_multiplier = 1.1
+spawn_rate_multiplier = 1.1
+guaranteed_elite_count = 4
+elite_chance = 0.06
+reward_gold = 90
+repeat_reward_multiplier = 0.5

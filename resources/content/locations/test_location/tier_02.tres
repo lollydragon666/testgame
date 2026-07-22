@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ExpeditionTierDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/expedition_tier_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tier = 2
+display_name = "Ступень II"
+wave_count = 4
+difficulty_multiplier = 1.1
+enemy_count_multiplier = 0.9
+spawn_rate_multiplier = 0.95
+guaranteed_elite_count = 3
+elite_chance = 0.04
+reward_gold = 55
+repeat_reward_multiplier = 0.5

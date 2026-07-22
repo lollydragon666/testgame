@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ExpeditionTierDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/expedition_tier_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tier = 10
+display_name = "Ступень X"
+wave_count = 15
+difficulty_multiplier = 2.5
+enemy_count_multiplier = 1.75
+spawn_rate_multiplier = 1.5
+guaranteed_elite_count = 4
+elite_chance = 0.14
+boss_id = &"boss"
+reward_gold = 450
+repeat_reward_multiplier = 0.4

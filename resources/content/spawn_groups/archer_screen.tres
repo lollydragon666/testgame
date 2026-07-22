@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EnemySpawnGroupDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/enemy_spawn_group_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"archer_screen"
+minimum_wave = 6
+enemy_ids = Array[StringName]([&"swordsman", &"archer"])
+minimum_counts = Array[int]([1, 1])
+maximum_counts = Array[int]([2, 2])
+formation_radius = 150.0
+

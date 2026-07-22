@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CharacterVisualDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/visuals/character_visual_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"enemy_bomber"
+body_style = &"wide"
+head_style = &"rough"
+helmet_style = &"leather_cap"
+enemy_weapon_style = &"bomb"
+body_width = 39.0
+body_height = 42.0
+shoulder_width = 45.0
+head_size = 17.0
+body_color = Color(0.38, 0.2, 0.12, 1)
+secondary_color = Color(0.16, 0.08, 0.04, 1)
+helmet_color = Color(0.26, 0.15, 0.08, 1)
+accent_color = Color(0.9, 0.42, 0.13, 1)
+visual_height = 62.0
+

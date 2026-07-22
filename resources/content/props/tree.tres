@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PropDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/prop_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"tree"
+style = &"tree"
+spawn_count = 46
+visual_radius = 44.0
+collision_radius = 44.0
+destructible = false
+size = Vector2(88, 120)
+base_color = Color(0.239, 0.357, 0.192, 1)
+secondary_color = Color(0.149, 0.208, 0.122, 1)
+accent_color = Color(0.412, 0.278, 0.145, 1)
+shadow_scale = Vector2(1.2, 1.0)
+visual_height = 124.0
+has_front_layer = true

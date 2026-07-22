@@ -1,0 +1,40 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource path="res://scripts/player/player.gd" type="Script" id="1_player"]
+[ext_resource path="res://scripts/player/player_movement.gd" type="Script" id="2_movement"]
+[ext_resource path="res://scripts/player/player_attack.gd" type="Script" id="3_attack"]
+[ext_resource path="res://scripts/player/player_magic.gd" type="Script" id="4_magic"]
+[ext_resource path="res://scripts/player/player_visual.gd" type="Script" id="5_visual"]
+[ext_resource path="res://scripts/entities/entity_hurtbox.gd" type="Script" id="6_hurtbox"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+resource_local_to_scene = true
+radius = 22.0
+
+[node name="Player" type="Node2D"]
+script = ExtResource("1_player")
+
+[node name="Movement" type="Node" parent="."]
+script = ExtResource("2_movement")
+
+[node name="Attack" type="Node" parent="."]
+script = ExtResource("3_attack")
+
+[node name="Magic" type="Node" parent="."]
+script = ExtResource("4_magic")
+
+[node name="Camera" type="Camera2D" parent="."]
+position_smoothing_enabled = true
+position_smoothing_speed = 10.0
+
+[node name="VisualRoot" type="Node2D" parent="."]
+script = ExtResource("5_visual")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+monitoring = false
+script = ExtResource("6_hurtbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_player")

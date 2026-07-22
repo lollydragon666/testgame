@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WaveDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/wave_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+number = 14
+enemy_roster = Array[StringName]([&"raider", &"brute", &"shield_bearer", &"bomber"])
+spawn_weights = {&"raider": 0.25, &"brute": 0.25, &"shield_bearer": 0.25, &"bomber": 0.25}
+guaranteed_group_ids = Array[StringName]([&"bomber_rush"])
+maximum_alive = {&"bomber": 2, &"brute": 2}
+duration_override = 17.0
+

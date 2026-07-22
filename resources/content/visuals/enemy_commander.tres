@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CharacterVisualDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/visuals/character_visual_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"enemy_commander"
+body_style = &"tall"
+head_style = &"human"
+helmet_style = &"commander_helmet"
+additional_style = &"cape"
+enemy_weapon_style = &"heavy_sword"
+body_width = 36.0
+body_height = 50.0
+shoulder_width = 43.0
+head_size = 17.0
+body_color = Color(0.31, 0.12, 0.11, 1)
+secondary_color = Color(0.12, 0.04, 0.04, 1)
+helmet_color = Color(0.44, 0.4, 0.32, 1)
+accent_color = Color(0.85, 0.65, 0.23, 1)
+visual_height = 72.0
+

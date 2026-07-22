@@ -1,0 +1,205 @@
+[gd_resource type="Resource" script_class="ItemAffixCatalog" load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_affix_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/items/item_affix_definition.gd" id="2_affix"]
+
+[sub_resource type="Resource" id="Sharp"]
+script = ExtResource("2_affix")
+id = &"sharp"
+display_name = "Острый"
+allowed_item_types = Array[int]([0])
+allowed_slots = Array[int]([1])
+stat_type = 0
+base_min = 2.0
+base_max = 5.0
+value_per_item_level = 0.45
+weight = 1.0
+exclusive_group = &"weapon_damage_flat"
+
+[sub_resource type="Resource" id="Mighty"]
+script = ExtResource("2_affix")
+id = &"mighty"
+display_name = "Могущественный"
+allowed_item_types = Array[int]([0, 2])
+allowed_slots = Array[int]([1, 3, 4])
+stat_type = 1
+minimum_item_level = 4
+base_min = 0.03
+base_max = 0.07
+value_per_item_level = 0.0025
+weight = 0.7
+percentage = true
+decimals = 3
+exclusive_group = &"weapon_damage_percent"
+
+[sub_resource type="Resource" id="Sturdy"]
+script = ExtResource("2_affix")
+id = &"sturdy"
+display_name = "Крепкий"
+allowed_item_types = Array[int]([1, 2])
+allowed_slots = Array[int]([2, 3, 4])
+stat_type = 2
+base_min = 3.0
+base_max = 7.0
+value_per_item_level = 0.5
+weight = 1.0
+exclusive_group = &"defense_flat"
+
+[sub_resource type="Resource" id="Impenetrable"]
+script = ExtResource("2_affix")
+id = &"impenetrable"
+display_name = "Непробиваемый"
+allowed_item_types = Array[int]([1])
+allowed_slots = Array[int]([2])
+stat_type = 2
+minimum_item_level = 10
+base_min = 12.0
+base_max = 20.0
+value_per_item_level = 0.75
+weight = 0.35
+exclusive_group = &"defense_flat"
+
+[sub_resource type="Resource" id="Vital"]
+script = ExtResource("2_affix")
+id = &"vital"
+display_name = "Живучий"
+allowed_item_types = Array[int]([1, 2])
+allowed_slots = Array[int]([2, 3, 4])
+stat_type = 3
+base_min = 5.0
+base_max = 15.0
+value_per_item_level = 1.25
+weight = 1.0
+exclusive_group = &"health_flat"
+
+[sub_resource type="Resource" id="Swift"]
+script = ExtResource("2_affix")
+id = &"swift"
+display_name = "Быстрый"
+allowed_item_types = Array[int]([0, 2])
+allowed_slots = Array[int]([1, 4])
+stat_type = 4
+minimum_item_level = 2
+base_min = 0.03
+base_max = 0.06
+value_per_item_level = 0.002
+weight = 0.8
+percentage = true
+decimals = 3
+exclusive_group = &"attack_speed"
+
+[sub_resource type="Resource" id="Rapid"]
+script = ExtResource("2_affix")
+id = &"rapid"
+display_name = "Стремительный"
+allowed_item_types = Array[int]([0, 2])
+allowed_slots = Array[int]([1, 4])
+stat_type = 4
+minimum_item_level = 12
+base_min = 0.08
+base_max = 0.12
+value_per_item_level = 0.0025
+weight = 0.25
+percentage = true
+decimals = 3
+exclusive_group = &"attack_speed"
+
+[sub_resource type="Resource" id="Light"]
+script = ExtResource("2_affix")
+id = &"light"
+display_name = "Лёгкий"
+allowed_item_types = Array[int]([1, 2])
+allowed_slots = Array[int]([2, 3, 4])
+stat_type = 5
+minimum_item_level = 2
+base_min = 0.02
+base_max = 0.05
+value_per_item_level = 0.0015
+weight = 0.8
+percentage = true
+decimals = 3
+exclusive_group = &"movement_speed"
+
+[sub_resource type="Resource" id="Long"]
+script = ExtResource("2_affix")
+id = &"long"
+display_name = "Длинный"
+allowed_item_types = Array[int]([0])
+allowed_slots = Array[int]([1])
+stat_type = 6
+minimum_item_level = 3
+base_min = 0.04
+base_max = 0.08
+value_per_item_level = 0.002
+weight = 0.7
+percentage = true
+decimals = 3
+exclusive_group = &"attack_reach"
+
+[sub_resource type="Resource" id="Sweeping"]
+script = ExtResource("2_affix")
+id = &"sweeping"
+display_name = "Размашистый"
+allowed_item_types = Array[int]([0])
+allowed_slots = Array[int]([1])
+stat_type = 7
+minimum_item_level = 3
+base_min = 0.05
+base_max = 0.1
+value_per_item_level = 0.0025
+weight = 0.6
+percentage = true
+decimals = 3
+exclusive_group = &"attack_width"
+
+[sub_resource type="Resource" id="Precise"]
+script = ExtResource("2_affix")
+id = &"precise"
+display_name = "Меткий"
+allowed_item_types = Array[int]([0, 2])
+allowed_slots = Array[int]([1, 3, 4])
+stat_type = 8
+minimum_item_level = 5
+base_min = 0.02
+base_max = 0.04
+value_per_item_level = 0.0012
+weight = 0.65
+percentage = true
+decimals = 3
+exclusive_group = &"critical_chance"
+
+[sub_resource type="Resource" id="Destructive"]
+script = ExtResource("2_affix")
+id = &"destructive"
+display_name = "Разрушительный"
+allowed_item_types = Array[int]([0, 2])
+allowed_slots = Array[int]([1, 3, 4])
+stat_type = 9
+minimum_item_level = 6
+base_min = 0.08
+base_max = 0.18
+value_per_item_level = 0.006
+weight = 0.55
+percentage = true
+decimals = 3
+exclusive_group = &"critical_damage"
+
+[sub_resource type="Resource" id="Lucky"]
+script = ExtResource("2_affix")
+id = &"lucky"
+display_name = "Счастливый"
+allowed_item_types = Array[int]([2])
+allowed_slots = Array[int]([3, 4])
+stat_type = 10
+minimum_item_level = 4
+base_min = 0.03
+base_max = 0.07
+value_per_item_level = 0.002
+weight = 0.45
+percentage = true
+decimals = 3
+exclusive_group = &"loot_chance"
+
+[resource]
+script = ExtResource("1_catalog")
+definitions = Array[ItemAffixDefinition]([SubResource("Sharp"), SubResource("Mighty"), SubResource("Sturdy"), SubResource("Impenetrable"), SubResource("Vital"), SubResource("Swift"), SubResource("Rapid"), SubResource("Light"), SubResource("Long"), SubResource("Sweeping"), SubResource("Precise"), SubResource("Destructive"), SubResource("Lucky")])

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PropDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/prop_definition.gd" id="1"]
+[resource]
+script=ExtResource("1")
+id=&"rock"
+style=&"rock"
+spawn_count=36
+visual_radius=27.0
+collision_radius=24.0
+destructible=false
+base_color=Color(0.27,0.27,0.25,1)
+secondary_color=Color(0.14,0.14,0.13,1)
+accent_color=Color(0.42,0.4,0.35,1)
+visual_height=34.0
+

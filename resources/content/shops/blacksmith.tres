@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ShopDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/shop_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"blacksmith"
+display_name = "Кузнец"
+stock_definition_ids = Array[StringName]([&"old_gladius", &"iron_sabre", &"mercenary_blade", &"falchion", &"knight_bastard_sword", &"duelist_rapier", &"northern_cleaver", &"royal_sword", &"executioner_blade", &"storm_sabre", &"dragon_fang", &"void_edge", &"titan_greatsword", &"sunforged_blade", &"cloth_armor", &"leather_armor", &"reinforced_leather", &"chainmail", &"mercenary_armor", &"knight_armor", &"royal_guard_armor", &"dragon_scale_armor", &"void_armor", &"titan_armor"])
