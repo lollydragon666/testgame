@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="ItemCatalog" load_steps=19 format=3]
+[gd_resource type="Resource" script_class="ItemCatalog" load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/items/item_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" path="res://scripts/content/weapon_definition.gd" id="2_weapon"]
 [ext_resource type="Resource" path="res://resources/content/weapons/player_sword.tres" id="3_training"]
 [ext_resource type="Resource" path="res://resources/equipment_catalog.tres" id="4_equipment"]
+[ext_resource type="Resource" path="res://resources/consumable_catalog.tres" id="5_consumables"]
 
 [sub_resource type="Resource" id="Weapon_old_gladius"]
 script = ExtResource("2_weapon")
@@ -271,4 +272,4 @@ cooldown = 0.33
 [resource]
 script = ExtResource("1_catalog")
 definitions = Array[ItemDefinition]([ExtResource("3_training"), SubResource("Weapon_old_gladius"), SubResource("Weapon_iron_sabre"), SubResource("Weapon_mercenary_blade"), SubResource("Weapon_falchion"), SubResource("Weapon_knight_bastard_sword"), SubResource("Weapon_duelist_rapier"), SubResource("Weapon_northern_cleaver"), SubResource("Weapon_royal_sword"), SubResource("Weapon_executioner_blade"), SubResource("Weapon_storm_sabre"), SubResource("Weapon_dragon_fang"), SubResource("Weapon_void_edge"), SubResource("Weapon_titan_greatsword"), SubResource("Weapon_sunforged_blade")])
-additional_catalogs = Array[Resource]([ExtResource("4_equipment")])
+additional_catalogs = Array[Resource]([ExtResource("4_equipment"), ExtResource("5_consumables")])

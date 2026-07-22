@@ -171,7 +171,7 @@ func effective_damage() -> float:
 
 func effective_cooldown_duration() -> float:
 	var haste_multiplier := host.haste_cooldown_multiplier if host != null else 1.0
-	var equipment_speed := 1.0 + maxf(-0.75, host.equipment_attack_speed_bonus) if host != null else 1.0
+	var equipment_speed := 1.0 + maxf(-0.75, host.equipment_attack_speed_bonus + host.temporary_attack_speed_bonus) if host != null else 1.0
 	return maxf(0.14, cooldown_duration * haste_multiplier / equipment_speed)
 
 func reset() -> void:

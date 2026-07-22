@@ -57,7 +57,7 @@ func effective_spell_damage(spell_kind: StringName) -> float:
 	var base_value := definition.base_damage + level_offset * definition.damage_per_level
 	if host == null:
 		return base_value
-	return base_value * host.profile_damage_multiplier * host.power_multiplier
+	return host.roll_attack_damage(base_value * host.profile_damage_multiplier * host.power_multiplier)
 
 func effective_spell_cooldown(spell_kind: StringName) -> float:
 	var definition := game_content.spell(spell_kind) if game_content != null else null
@@ -66,7 +66,8 @@ func effective_spell_cooldown(spell_kind: StringName) -> float:
 	var level_offset := float(maxi(1, get_spell_level(spell_kind)) - 1)
 	var leveled_cooldown := definition.base_cooldown - level_offset * definition.cooldown_reduction_per_level
 	var haste_multiplier := host.haste_cooldown_multiplier if host != null else 1.0
-	return maxf(definition.minimum_cooldown, leveled_cooldown * haste_multiplier)
+	var equipment_speed := 1.0 + maxf(-0.75, host.equipment_attack_speed_bonus + host.temporary_attack_speed_bonus) if host != null else 1.0
+	return maxf(definition.minimum_cooldown, leveled_cooldown * haste_multiplier / equipment_speed)
 
 func reset() -> void:
 	spell_levels.clear()

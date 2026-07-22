@@ -26,6 +26,8 @@ var wave_label: Label
 var level_label: Label
 var magic_label: Label
 var dash_label: Label
+var quick_slot_2_label: Label
+var quick_slot_3_label: Label
 var expedition_label: Label
 var game_over_title: Label
 var game_over_details: Label
@@ -178,15 +180,30 @@ func _build_hud() -> void:
 	var bottom_center := MarginContainer.new()
 	bottom_center.name = "BottomCenterContainer"
 	bottom_center.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	bottom_center.offset_left = -110.0
-	bottom_center.offset_top = -55.0
-	bottom_center.offset_right = 110.0
+	bottom_center.offset_left = -190.0
+	bottom_center.offset_top = -105.0
+	bottom_center.offset_right = 190.0
 	bottom_center.offset_bottom = -24.0
 	hud.add_child(bottom_center)
+	var quick_box := VBoxContainer.new()
+	quick_box.add_theme_constant_override("separation", 2)
+	bottom_center.add_child(quick_box)
+	var slots_row := HBoxContainer.new()
+	slots_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	slots_row.add_theme_constant_override("separation", 18)
+	quick_box.add_child(slots_row)
+	quick_slot_2_label = Label.new()
+	quick_slot_2_label.add_theme_font_size_override("font_size", 15)
+	quick_slot_2_label.add_theme_color_override("font_color", Color("9bcf8d"))
+	slots_row.add_child(quick_slot_2_label)
+	quick_slot_3_label = Label.new()
+	quick_slot_3_label.add_theme_font_size_override("font_size", 15)
+	quick_slot_3_label.add_theme_color_override("font_color", Color("9bcf8d"))
+	slots_row.add_child(quick_slot_3_label)
 	dash_label = Label.new()
 	dash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	dash_label.add_theme_font_size_override("font_size", 16)
-	bottom_center.add_child(dash_label)
+	quick_box.add_child(dash_label)
 
 func _build_upgrade_panel() -> void:
 	upgrade_panel = ColorRect.new()
@@ -368,3 +385,26 @@ func set_dash_status(cooldown_remaining: float, _cooldown_duration: float, activ
 	else:
 		dash_label.text = "РЫВОК: %.1fс" % cooldown_remaining
 		dash_label.add_theme_color_override("font_color", Color("8f7c61"))
+
+func set_consumable_slots(inventory: InventoryService) -> void:
+	if inventory == null or quick_slot_2_label == null or quick_slot_3_label == null:
+		return
+	_set_consumable_slot_label(quick_slot_2_label, "2", ItemEnums.EquipmentSlot.CONSUMABLE_2, inventory)
+	_set_consumable_slot_label(quick_slot_3_label, "3", ItemEnums.EquipmentSlot.CONSUMABLE_3, inventory)
+
+func _set_consumable_slot_label(
+	label: Label,
+	key_name: String,
+	slot: ItemEnums.EquipmentSlot,
+	inventory: InventoryService
+) -> void:
+	var item := inventory.equipped_item(slot)
+	var definition := inventory.equipped_definition(slot) as ConsumableDefinition
+	if item == null or definition == null:
+		label.text = "[%s] ◇ ПУСТО" % key_name
+		label.add_theme_color_override("font_color", Color("6c6255"))
+		return
+	var cooldown := inventory.consumable_cooldown_remaining(slot)
+	var cooldown_text := " · %.1fс" % cooldown if cooldown > 0.0 else ""
+	label.text = "[%s] ◆ %s ×%d%s" % [key_name, definition.display_name, item.quantity, cooldown_text]
+	label.add_theme_color_override("font_color", Color("9bcf8d") if cooldown <= 0.0 else Color("8f7c61"))

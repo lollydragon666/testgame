@@ -129,6 +129,10 @@ func _ready() -> void:
 	ui.set_wave(1, expedition_tier.wave_count if expedition_tier != null else 1)
 	ui.set_magic(&"", 0)
 	ui.set_dash_status(0.0, PlayerHero.DASH_COOLDOWN, false)
+	inventory_service.inventory_changed.connect(_refresh_consumable_hud)
+	inventory_service.consumable_slot_changed.connect(func(_slot: ItemEnums.EquipmentSlot): _refresh_consumable_hud())
+	inventory_service.consumable_cooldown_changed.connect(func(_slot: ItemEnums.EquipmentSlot, _remaining: float, _duration: float): _refresh_consumable_hud())
+	_refresh_consumable_hud()
 	if auto_start_on_ready:
 		_start_run.call_deferred()
 
@@ -150,6 +154,7 @@ func _start_run() -> void:
 	player.reset_run()
 	player.apply_equipped_weapon()
 	player.apply_equipment_stats(PlayerStatCalculator.calculate(inventory_service))
+	_refresh_consumable_hud()
 	run_setup_requested.emit(player)
 	player.set_gameplay_active(true)
 	running = true
@@ -375,6 +380,10 @@ func _on_dash_status_changed(cooldown_remaining: float, cooldown_duration: float
 	if ui != null:
 		ui.set_dash_status(cooldown_remaining, cooldown_duration, active)
 
+func _refresh_consumable_hud() -> void:
+	if ui != null:
+		ui.set_consumable_slots(inventory_service)
+
 func _on_player_died() -> void:
 	_finish_run(false)
 
@@ -386,6 +395,8 @@ func _finish_run(victory: bool) -> void:
 	current_upgrade_choices.clear()
 	wave_manager.stop()
 	player.set_gameplay_active(false)
+	player.clear_temporary_effects()
+	inventory_service.reset_consumable_runtime()
 	_clear_runtime_nodes()
 	get_tree().paused = false
 	var action_text := "ВЕРНУТЬСЯ В ХАБ" if mode_config.mode_id == CombatModeConfig.MODE_EXPEDITION else "ПЕРЕЗАПУСТИТЬ АРЕНУ"

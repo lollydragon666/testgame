@@ -1,0 +1,126 @@
+[gd_resource type="Resource" script_class="ItemCatalog" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/items/consumable_definition.gd" id="2_consumable"]
+
+[sub_resource type="Resource" id="Consumable_small_healing"]
+script = ExtResource("2_consumable")
+id = &"small_healing_potion"
+display_name = "Малое зелье лечения"
+description = "Восстанавливает 30 здоровья."
+item_type = 3
+equipment_slot = 7
+rarity = 0
+base_price = 60
+sell_price = 21
+stackable = true
+max_stack = 20
+visual_style = &"healing_small"
+sort_order = 1
+effect_type = 0
+effect_value = 30.0
+cooldown = 2.0
+
+[sub_resource type="Resource" id="Consumable_large_healing"]
+script = ExtResource("2_consumable")
+id = &"large_healing_potion"
+display_name = "Большое зелье лечения"
+description = "Восстанавливает 75 здоровья."
+item_type = 3
+equipment_slot = 7
+rarity = 1
+base_price = 150
+sell_price = 52
+stackable = true
+max_stack = 20
+visual_style = &"healing_large"
+sort_order = 2
+minimum_wave = 3
+effect_type = 0
+effect_value = 75.0
+cooldown = 2.0
+
+[sub_resource type="Resource" id="Consumable_power"]
+script = ExtResource("2_consumable")
+id = &"power_potion"
+display_name = "Зелье силы"
+description = "+25% урона на 20 секунд."
+item_type = 3
+equipment_slot = 7
+rarity = 1
+base_price = 260
+sell_price = 91
+stackable = true
+max_stack = 20
+visual_style = &"power"
+sort_order = 3
+minimum_wave = 3
+effect_type = 1
+effect_value = 0.25
+duration = 20.0
+cooldown = 4.0
+
+[sub_resource type="Resource" id="Consumable_iron_skin"]
+script = ExtResource("2_consumable")
+id = &"iron_skin_potion"
+display_name = "Зелье каменной кожи"
+description = "+35 защиты на 20 секунд."
+item_type = 3
+equipment_slot = 7
+rarity = 1
+base_price = 240
+sell_price = 84
+stackable = true
+max_stack = 20
+visual_style = &"iron_skin"
+sort_order = 4
+minimum_wave = 3
+effect_type = 2
+effect_value = 35.0
+duration = 20.0
+cooldown = 4.0
+
+[sub_resource type="Resource" id="Consumable_haste"]
+script = ExtResource("2_consumable")
+id = &"haste_potion"
+display_name = "Зелье ускорения"
+description = "+20% скорости атаки на 15 секунд."
+item_type = 3
+equipment_slot = 7
+rarity = 1
+base_price = 250
+sell_price = 87
+stackable = true
+max_stack = 20
+visual_style = &"haste"
+sort_order = 5
+minimum_wave = 4
+effect_type = 3
+effect_value = 0.20
+duration = 15.0
+cooldown = 4.0
+
+[sub_resource type="Resource" id="Consumable_wind"]
+script = ExtResource("2_consumable")
+id = &"wind_potion"
+display_name = "Зелье ветра"
+description = "+20% скорости движения на 20 секунд."
+item_type = 3
+equipment_slot = 7
+rarity = 1
+base_price = 220
+sell_price = 77
+stackable = true
+max_stack = 20
+visual_style = &"wind"
+sort_order = 6
+minimum_wave = 4
+effect_type = 4
+effect_value = 0.20
+duration = 20.0
+cooldown = 4.0
+
+[resource]
+script = ExtResource("1_catalog")
+definitions = Array[ItemDefinition]([SubResource("Consumable_small_healing"), SubResource("Consumable_large_healing"), SubResource("Consumable_power"), SubResource("Consumable_iron_skin"), SubResource("Consumable_haste"), SubResource("Consumable_wind")])
+

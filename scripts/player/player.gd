@@ -9,6 +9,7 @@ signal magic_cast_requested(spell_kind: StringName, origin: Vector2, direction: 
 signal magic_changed(spell_kind: StringName, spell_level: int)
 signal dash_status_changed(cooldown_remaining: float, cooldown_duration: float, active: bool)
 signal player_stats_changed(stats: PlayerStats)
+signal temporary_effects_changed
 
 const DASH_DISTANCE := 165.0
 const DASH_COOLDOWN := 1.1
@@ -55,6 +56,12 @@ var equipment_loot_chance := 0.0
 var critical_chance := 0.0
 var critical_damage := 1.5
 var combat_random := RandomNumberGenerator.new()
+var temporary_damage_bonus := 0.0
+var temporary_defense_bonus := 0.0
+var temporary_attack_speed_bonus := 0.0
+var temporary_movement_speed_bonus := 0.0
+var _applied_temporary_movement_factor := 1.0
+var _temporary_effects: Dictionary[int, Dictionary] = {}
 
 # Компоненты объявлены в player.tscn, а поведенческий скрипт только связывает их.
 @onready var movement: PlayerMovement = $Movement
@@ -96,6 +103,7 @@ func _ready() -> void:
 		return
 	attack.setup(self, weapon_definition, equipped_weapon)
 	inventory_service.equipment_changed.connect(_on_equipment_changed)
+	inventory_service.configure_consumable_handler(apply_consumable)
 	magic.setup(self, game_content)
 	magic.cast_requested.connect(_relay_magic_cast)
 	magic.magic_changed.connect(_relay_magic_changed)
@@ -117,6 +125,8 @@ func _physics_process(delta: float) -> void:
 		return
 	invulnerability = maxf(0.0, invulnerability - delta)
 	dash_cooldown_remaining = maxf(0.0, dash_cooldown_remaining - delta)
+	inventory_service.tick_consumable_cooldowns(delta)
+	_tick_temporary_effects(delta)
 	input_state.sample(global_position, get_global_mouse_position())
 	aim_direction = input_state.aim_world
 	if input_state.dash_pressed:
@@ -134,6 +144,10 @@ func _physics_process(delta: float) -> void:
 		attack.try_attack()
 	if not is_dashing and input_state.magic_pressed:
 		magic.try_cast()
+	if not is_dashing and input_state.quick_slot_2_pressed:
+		inventory_service.use_consumable_slot(ItemEnums.EquipmentSlot.CONSUMABLE_2)
+	if not is_dashing and input_state.quick_slot_3_pressed:
+		inventory_service.use_consumable_slot(ItemEnums.EquipmentSlot.CONSUMABLE_3)
 	dash_status_changed.emit(dash_cooldown_remaining, DASH_COOLDOWN, is_dashing)
 	refresh_visual()
 
@@ -215,7 +229,8 @@ func take_damage(amount: float) -> void:
 	if invulnerability > 0.0 or not is_alive:
 		return
 	var armor_reduced := amount * (1.0 - armor_damage_reduction)
-	var reduced_amount := maxf(0.0, armor_reduced) * 100.0 / (100.0 + maxf(0.0, equipment_defense))
+	var total_defense := equipment_defense + temporary_defense_bonus
+	var reduced_amount := maxf(0.0, armor_reduced) * 100.0 / (100.0 + maxf(0.0, total_defense))
 	health = maxf(0.0, health - reduced_amount)
 	invulnerability = 0.45
 	health_changed.emit(health, max_health)
@@ -268,6 +283,60 @@ func apply_profile_bonuses(max_health_bonus: float, damage_bonus: float) -> void
 	profile_damage_multiplier = maxf(0.0, 1.0 + damage_bonus)
 	health_changed.emit(health, max_health)
 
+func apply_consumable(definition: ConsumableDefinition) -> bool:
+	if definition == null or not is_alive:
+		return false
+	if definition.effect_type == ItemEnums.ConsumableEffectType.HEAL:
+		if health >= max_health - 0.001:
+			return false
+		heal(maxf(0.0, definition.effect_value))
+		return true
+	if definition.duration <= 0.0:
+		return false
+	_temporary_effects[int(definition.effect_type)] = {
+		"value": definition.effect_value,
+		"remaining": definition.duration,
+	}
+	_recalculate_temporary_effects()
+	temporary_effects_changed.emit()
+	return true
+
+func temporary_effect_remaining(effect_type: ItemEnums.ConsumableEffectType) -> float:
+	var effect: Dictionary = _temporary_effects.get(int(effect_type), {})
+	return float(effect.get("remaining", 0.0))
+
+func _tick_temporary_effects(delta: float) -> void:
+	if delta <= 0.0 or _temporary_effects.is_empty():
+		return
+	var changed := false
+	for effect_type in _temporary_effects.keys():
+		var effect: Dictionary = _temporary_effects[effect_type]
+		effect["remaining"] = maxf(0.0, float(effect.get("remaining", 0.0)) - delta)
+		if float(effect["remaining"]) <= 0.0:
+			_temporary_effects.erase(effect_type)
+			changed = true
+	if changed:
+		_recalculate_temporary_effects()
+		temporary_effects_changed.emit()
+
+func _recalculate_temporary_effects() -> void:
+	var previous_movement_factor := _applied_temporary_movement_factor
+	temporary_damage_bonus = _temporary_effect_value(ItemEnums.ConsumableEffectType.DAMAGE_BOOST)
+	temporary_defense_bonus = _temporary_effect_value(ItemEnums.ConsumableEffectType.DEFENSE_BOOST)
+	temporary_attack_speed_bonus = _temporary_effect_value(ItemEnums.ConsumableEffectType.ATTACK_SPEED_BOOST)
+	temporary_movement_speed_bonus = _temporary_effect_value(ItemEnums.ConsumableEffectType.MOVEMENT_SPEED_BOOST)
+	_applied_temporary_movement_factor = maxf(0.25, 1.0 + temporary_movement_speed_bonus)
+	movement.speed = movement.speed / previous_movement_factor * _applied_temporary_movement_factor
+
+func _temporary_effect_value(effect_type: ItemEnums.ConsumableEffectType) -> float:
+	var effect: Dictionary = _temporary_effects.get(int(effect_type), {})
+	return float(effect.get("value", 0.0))
+
+func clear_temporary_effects() -> void:
+	_temporary_effects.clear()
+	_recalculate_temporary_effects()
+	temporary_effects_changed.emit()
+
 func apply_equipment_stats(stats: PlayerStats) -> void:
 	var previous_health_bonus := equipment_stats.max_health_bonus
 	var previous_movement_factor := maxf(0.25, 1.0 + equipment_stats.movement_speed_bonus)
@@ -302,7 +371,7 @@ func _on_equipment_changed() -> void:
 	apply_equipment_stats(PlayerStatCalculator.calculate(inventory_service))
 
 func roll_attack_damage(base_amount: float) -> float:
-	var result := base_amount * equipment_damage_multiplier
+	var result := base_amount * equipment_damage_multiplier * maxf(0.0, 1.0 + temporary_damage_bonus)
 	if critical_chance > 0.0 and combat_random.randf() < critical_chance:
 		result *= critical_damage
 	return maxf(0.0, result)
@@ -337,16 +406,24 @@ func reset_run() -> void:
 	equipment_loot_chance = 0.0
 	critical_chance = 0.0
 	critical_damage = 1.5
+	temporary_damage_bonus = 0.0
+	temporary_defense_bonus = 0.0
+	temporary_attack_speed_bonus = 0.0
+	temporary_movement_speed_bonus = 0.0
+	_applied_temporary_movement_factor = 1.0
+	_temporary_effects.clear()
 	combat_random.seed = 1
 	movement.speed = 195.0
 	movement.reset()
 	attack.reset()
 	magic.reset()
 	input_state.reset()
+	inventory_service.reset_consumable_runtime()
 	hurtbox.set_collision_radius(collision_radius)
 	health_changed.emit(health, max_health)
 	experience_changed.emit(experience, experience_required, level)
 	dash_status_changed.emit(0.0, DASH_COOLDOWN, false)
+	temporary_effects_changed.emit()
 	refresh_visual()
 
 func refresh_visual() -> void:

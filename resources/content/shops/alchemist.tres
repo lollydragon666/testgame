@@ -6,5 +6,4 @@
 script = ExtResource("1")
 id = &"alchemist"
 display_name = "Алхимик"
-stock_definition_ids = Array[StringName]([])
-
+stock_definition_ids = Array[StringName]([&"small_healing_potion", &"large_healing_potion", &"power_potion", &"iron_skin_potion", &"haste_potion", &"wind_potion"])

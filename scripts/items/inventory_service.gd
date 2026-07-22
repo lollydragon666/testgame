@@ -6,6 +6,7 @@ signal item_added(instance_id: String)
 signal item_removed(instance_id: String)
 signal equipment_changed
 signal consumable_slot_changed(slot: ItemEnums.EquipmentSlot)
+signal consumable_cooldown_changed(slot: ItemEnums.EquipmentSlot, remaining: float, duration: float)
 
 const CAPACITY := 40
 const STARTER_WEAPON_ID := &"player_sword"
@@ -13,10 +14,16 @@ const STARTER_WEAPON_ID := &"player_sword"
 var game_content: GameContent
 var _items: Array[ItemInstance] = []
 var _equipped_items: Dictionary = {}
+var _consumable_cooldowns: Dictionary[ItemEnums.EquipmentSlot, float] = {}
+var _consumable_handler: Callable
 
 func configure(content: GameContent) -> void:
 	game_content = content
 	_reset_equipment()
+	reset_consumable_runtime()
+
+func configure_consumable_handler(handler: Callable) -> void:
+	_consumable_handler = handler
 
 func _reset_equipment() -> void:
 	_equipped_items = {
@@ -233,6 +240,52 @@ func serialized_equipment() -> Dictionary:
 func inventory_size() -> int:
 	return _items.size()
 
+func use_consumable_slot(slot: ItemEnums.EquipmentSlot) -> bool:
+	if slot != ItemEnums.EquipmentSlot.CONSUMABLE_2 and slot != ItemEnums.EquipmentSlot.CONSUMABLE_3:
+		return false
+	if consumable_cooldown_remaining(slot) > 0.0 or not _consumable_handler.is_valid():
+		return false
+	var item := equipped_item(slot)
+	var definition := equipped_definition(slot) as ConsumableDefinition
+	if item == null or item.quantity <= 0 or definition == null:
+		return false
+	if not bool(_consumable_handler.call(definition)):
+		return false
+	var consumed_instance_id := item.instance_id
+	if item.quantity == 1:
+		_equipped_items[slot] = ""
+		consumable_slot_changed.emit(slot)
+	if not remove_item(consumed_instance_id, 1):
+		if item.quantity == 1:
+			_equipped_items[slot] = consumed_instance_id
+		return false
+	_consumable_cooldowns[slot] = maxf(0.0, definition.cooldown)
+	consumable_cooldown_changed.emit(slot, definition.cooldown, definition.cooldown)
+	return true
+
+func tick_consumable_cooldowns(delta: float) -> void:
+	if delta <= 0.0:
+		return
+	for slot in _consumable_cooldowns.keys():
+		var previous := _consumable_cooldowns[slot]
+		var remaining := maxf(0.0, previous - delta)
+		_consumable_cooldowns[slot] = remaining
+		if not is_equal_approx(previous, remaining):
+			var definition := equipped_definition(slot) as ConsumableDefinition
+			var duration := definition.cooldown if definition != null else previous
+			consumable_cooldown_changed.emit(slot, remaining, duration)
+		if remaining <= 0.0:
+			_consumable_cooldowns.erase(slot)
+
+func consumable_cooldown_remaining(slot: ItemEnums.EquipmentSlot) -> float:
+	return float(_consumable_cooldowns.get(slot, 0.0))
+
+func reset_consumable_runtime() -> void:
+	_consumable_cooldowns.clear()
+	for slot in [ItemEnums.EquipmentSlot.CONSUMABLE_2, ItemEnums.EquipmentSlot.CONSUMABLE_3]:
+		consumable_cooldown_changed.emit(slot, 0.0, 0.0)
+
 func clear_for_tests() -> void:
 	_items.clear()
 	_reset_equipment()
+	reset_consumable_runtime()
