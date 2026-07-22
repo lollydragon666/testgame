@@ -211,6 +211,14 @@ func player_projectile_count() -> int:
 func pickup_count() -> int:
 	return _pickups.size()
 
+func spatial_cell_count() -> int:
+	return (
+		_enemy_grid.cell_count()
+		+ _enemy_projectile_grid.cell_count()
+		+ _destructible_grid.cell_count()
+		+ _obstacle_grid.cell_count()
+	)
+
 func can_spawn_enemy_projectile(config: WorldConfig) -> bool:
 	return enemy_projectile_count() < config.max_enemy_projectiles
 
