@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LocationDefinition" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/location_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_01.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_02.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_03.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_04.tres" id="5"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_05.tres" id="6"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_06.tres" id="7"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_07.tres" id="8"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_08.tres" id="9"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_09.tres" id="10"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location/tier_10.tres" id="11"]
+
+[resource]
+script = ExtResource("1")
+id = &"test_location"
+display_name = "Тёмный лес"
+description = "Первая боевая локация с десятью ступенями угрозы."
+tiers = Array[ExpeditionTierDefinition]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11")])

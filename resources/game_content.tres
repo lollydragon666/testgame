@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="GameContent" load_steps=31 format=3]
+[gd_resource type="Resource" script_class="GameContent" load_steps=32 format=3]
 
 [ext_resource type="Script" path="res://scripts/content/game_content.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/content/enemies/brawler.tres" id="2"]
@@ -30,6 +30,7 @@
 [ext_resource type="Resource" path="res://resources/content/upgrades/haste.tres" id="28"]
 [ext_resource type="Resource" path="res://resources/content/upgrades/armor.tres" id="29"]
 [ext_resource type="Resource" path="res://resources/content/upgrades/magnet.tres" id="30"]
+[ext_resource type="Resource" path="res://resources/content/locations/test_location.tres" id="31"]
 
 [resource]
 script = ExtResource("1")
@@ -39,3 +40,4 @@ weapons = Array[WeaponDefinition]([ExtResource("11")])
 upgrades = Array[UpgradeDefinition]([ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("27"), ExtResource("28"), ExtResource("29"), ExtResource("30")])
 waves = Array[WaveDefinition]([ExtResource("17"), ExtResource("18"), ExtResource("19"), ExtResource("20"), ExtResource("21"), ExtResource("22"), ExtResource("23")])
 props = Array[PropDefinition]([ExtResource("24"), ExtResource("25"), ExtResource("26")])
+locations = Array[LocationDefinition]([ExtResource("31")])

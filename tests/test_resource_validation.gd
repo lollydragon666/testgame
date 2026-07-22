@@ -79,6 +79,9 @@ func _validate_content_catalog() -> void:
 	_check(not CONTENT.upgrades.is_empty(), "GameContent has no upgrades")
 	_check(not CONTENT.waves.is_empty(), "GameContent has no waves")
 	_check(not CONTENT.props.is_empty(), "GameContent has no props")
+	_check(not CONTENT.locations.is_empty(), "GameContent has no locations")
+	for location_error in CONTENT.validate_locations():
+		_check(false, location_error)
 
 	var enemy_ids: Dictionary[StringName, bool] = {}
 	for definition in CONTENT.enemies:
@@ -145,4 +148,3 @@ func _validate_content_catalog() -> void:
 		_check(not prop_ids.has(definition.id), "Duplicate prop ID: %s" % definition.id)
 		prop_ids[definition.id] = true
 		_check(definition.spawn_count >= 0, "Prop spawn_count cannot be negative: %s" % definition.id)
-
