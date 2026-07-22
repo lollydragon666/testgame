@@ -16,7 +16,7 @@ func sync_from_enemy(enemy: EnemyBase) -> void:
 		set_facing(enemy.player.world_position - enemy.world_position)
 	set_movement_state(enemy.world_position - enemy.previous_world_position)
 	var archetype := enemy as ArchetypeEnemy
-	if archetype != null and archetype.heal_windup_remaining > 0.0:
+	if archetype != null and (archetype.heal_windup_remaining > 0.0 or archetype.summon_windup_remaining > 0.0 or archetype.explosion_windup_remaining > 0.0):
 		refresh_effects()
 
 func refresh_status() -> void:
@@ -45,6 +45,16 @@ func _draw_enemy_status() -> void:
 			if is_instance_valid(archetype.heal_target):
 				var link := IsoMath.world_to_screen(archetype.heal_target.world_position - enemy.world_position)
 				effects.draw_dashed_line(Vector2(0.0, -20.0), link, Color(0.42, 0.9, 0.56, 0.72), 3.0, 8.0)
+		elif enemy.definition.enemy_class == EnemyDefinition.EnemyClass.SUMMONER and archetype.summon_windup_remaining > 0.0:
+			var summon_progress := 1.0 - archetype.summon_windup_remaining / 0.82
+			effects.draw_set_transform(Vector2(0.0, 5.0), 0.0, Vector2(1.0, 0.46))
+			effects.draw_arc(Vector2.ZERO, lerpf(58.0, 24.0, summon_progress), 0.0, TAU, 32, Color(0.65, 0.32, 0.86, 0.82), 4.0)
+			effects.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		elif enemy.definition.enemy_class == EnemyDefinition.EnemyClass.BOMBER and archetype.explosion_windup_remaining > 0.0:
+			var warning_progress := 1.0 - archetype.explosion_windup_remaining / 1.2
+			effects.draw_set_transform(Vector2(0.0, 5.0), 0.0, Vector2(1.0, 0.46))
+			effects.draw_arc(Vector2.ZERO, 68.0, 0.0, TAU * warning_progress, 40, Color(0.95, 0.19, 0.08, 0.9), 6.0)
+			effects.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if enemy.is_elite:
 		var gold := Color("d8b45c")
 		effects.draw_arc(Vector2(0.0, -visual_definition.body_height * 0.52), enemy.visual_radius + 7.0, 0.0, TAU, 32, gold, 3.0)

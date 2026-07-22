@@ -12,6 +12,10 @@ var shield_open_remaining := 0.0
 var heal_windup_remaining := 0.0
 var heal_target: EnemyBase
 var strafe_side := 1.0
+var summon_windup_remaining := 0.0
+var explosion_windup_remaining := 0.0
+var explosion_triggered := false
+var summoner_owner_id := 0
 
 func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float, config: WorldConfig, enemy_definition: EnemyDefinition = null, elite := false) -> void:
 	super.setup(player_target, spawn_position, difficulty, config, enemy_definition, elite)
@@ -31,6 +35,10 @@ func tick_behavior(delta: float) -> void:
 	shield_open_remaining = maxf(0.0, shield_open_remaining - delta)
 	combat_facing = targeting_controller.direction_to_player()
 	match definition.enemy_class:
+		EnemyDefinition.EnemyClass.SUMMONER:
+			_tick_summoner(delta)
+		EnemyDefinition.EnemyClass.BOMBER:
+			_tick_bomber(delta)
 		EnemyDefinition.EnemyClass.ARCHER:
 			_tick_archer(delta)
 		EnemyDefinition.EnemyClass.HEALER:
@@ -49,6 +57,67 @@ func tick_behavior(delta: float) -> void:
 			_tick_swordsman(delta)
 		_:
 			_tick_swordsman(delta)
+
+func _tick_summoner(delta: float) -> void:
+	if summon_windup_remaining > 0.0:
+		summon_windup_remaining = maxf(0.0, summon_windup_remaining - delta)
+		visual_root.refresh_effects()
+		if summon_windup_remaining <= 0.0:
+			var available_slots := maxi(0, 4 - _owned_minion_count())
+			if available_slots > 0:
+				summon_requested.emit(self, mini(2, available_slots))
+		return
+	var distance := targeting_controller.distance_to_player()
+	if distance < definition.retreat_distance:
+		movement_controller.retreat(combat_facing, delta)
+	elif distance > definition.preferred_distance:
+		movement_controller.approach(combat_facing, delta, 0.78)
+	else:
+		movement_controller.strafe(combat_facing, strafe_side, delta, 0.25)
+	if ability_controller.ready() and _owned_minion_count() < 4 and ability_controller.consume():
+		summon_windup_remaining = 0.82
+		visual_root.play_attack()
+
+func _owned_minion_count() -> int:
+	if world_state == null:
+		return 0
+	var count := 0
+	for enemy in world_state.enemy_snapshot():
+		var minion := enemy as ArchetypeEnemy
+		if minion != null and minion.is_alive and minion.summoner_owner_id == get_instance_id():
+			count += 1
+	return count
+
+func _tick_bomber(delta: float) -> void:
+	if explosion_triggered:
+		return
+	if explosion_windup_remaining > 0.0:
+		explosion_windup_remaining = maxf(0.0, explosion_windup_remaining - delta)
+		visual_root.refresh_effects()
+		if explosion_windup_remaining <= 0.0:
+			_explode()
+		return
+	if targeting_controller.distance_to_player() > definition.preferred_distance:
+		movement_controller.approach(combat_facing, delta, 1.08)
+	else:
+		explosion_windup_remaining = 1.2
+		visual_root.play_attack()
+
+func _explode() -> void:
+	if explosion_triggered or not is_alive:
+		return
+	explosion_triggered = true
+	var radius := definition.attack_range
+	if targeting_controller.distance_to_player() <= radius:
+		damage_player(definition.attack_damage)
+	if world_state != null:
+		for enemy in world_state.enemies_near(world_position, radius + 48.0):
+			if enemy == self or not enemy.is_alive:
+				continue
+			var offset := enemy.world_position - world_position
+			if offset.length() <= radius + enemy.collision_radius:
+				enemy.take_damage(definition.attack_damage * definition.ability_power, offset)
+	super.take_damage(health + maxf(1.0, defense) + 1.0)
 
 func _tick_archer(delta: float) -> void:
 	var distance := targeting_controller.distance_to_player()

@@ -276,6 +276,15 @@ func clear_runtime() -> void:
 	clear_pickups()
 
 func enemy_count() -> int:
+	var count := 0
+	for enemy in _enemies:
+		if not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		if enemy.definition == null or enemy.definition.counts_for_wave:
+			count += 1
+	return count
+
+func active_enemy_count() -> int:
 	return _enemies.size()
 
 func enemy_projectile_count() -> int:

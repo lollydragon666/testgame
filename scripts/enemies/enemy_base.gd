@@ -4,6 +4,7 @@ extends Node2D
 signal died(enemy: EnemyBase, experience_value: int)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: float)
 signal arrow_requested(origin: Vector2, direction: Vector2, damage: float)
+signal summon_requested(summoner: EnemyBase, count: int)
 signal spell_requested(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float)
 
 ## Позиция врага в общей логической системе координат мира.
@@ -31,6 +32,7 @@ var runtime_attack_speed_multiplier := 1.0
 ## Опыт, выпадающий после смерти обычного врага.
 var experience_value := 18
 var is_elite := false
+var difficulty_multiplier := 1.0
 var _elite_modifiers_applied := false
 var hit_flash := 0.0
 var is_alive := true
@@ -47,6 +49,7 @@ func _ready() -> void:
 func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float, config: WorldConfig, enemy_definition: EnemyDefinition = null, elite := false) -> void:
 	# difficulty усиливает характеристики по номеру волны, но не меняет радиус модели.
 	player = player_target
+	difficulty_multiplier = difficulty
 	world_position = spawn_position
 	world_config = config
 	definition = enemy_definition

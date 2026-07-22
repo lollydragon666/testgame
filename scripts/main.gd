@@ -126,6 +126,7 @@ func _ready() -> void:
 	enemy_spawner.enemy_died.connect(_on_enemy_died)
 	enemy_spawner.projectile_requested.connect(_spawn_projectile)
 	enemy_spawner.arrow_requested.connect(_spawn_arrow)
+	enemy_spawner.summon_requested.connect(_spawn_summoned_minions)
 	enemy_spawner.spell_requested.connect(_spawn_enemy_spell)
 	add_child(enemy_spawner)
 
@@ -251,6 +252,20 @@ func _spawn_arrow(origin: Vector2, direction: Vector2, damage: float) -> void:
 	_register_enemy_projectile(arrow)
 	projectiles_root.add_child(arrow)
 
+func _spawn_summoned_minions(summoner: EnemyBase, count: int) -> void:
+	if not running or not is_instance_valid(summoner) or not summoner.is_alive:
+		return
+	var offsets := [Vector2(58.0, 0.0), Vector2(-58.0, 0.0), Vector2(0.0, 58.0), Vector2(0.0, -58.0)]
+	for index in mini(count, offsets.size()):
+		var minion := enemy_spawner.spawn(
+			GameIds.ENEMY_SUMMONED_MINION,
+			summoner.difficulty_multiplier,
+			summoner.world_position + offsets[index].rotated(float(summoner.get_instance_id() % 8) * PI * 0.25),
+			false
+		) as ArchetypeEnemy
+		if minion != null:
+			minion.summoner_owner_id = summoner.get_instance_id()
+
 func _spawn_player_magic(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float, spell_level: int) -> void:
 	if not running or not world_state.can_spawn_player_projectile(WORLD_CONFIG):
 		return
@@ -301,7 +316,7 @@ func _on_enemy_died(enemy: EnemyBase, experience_value: int) -> void:
 	defeated_enemies += 1
 	if enemy.is_elite:
 		defeated_elites += 1
-	if running:
+	if running and (enemy.definition == null or enemy.definition.grants_loot):
 		var dropped_items := loot_service.roll_for_enemy(enemy, current_wave(), player.equipment_loot_chance, run_random)
 		for dropped_item in dropped_items:
 			_spawn_world_item(dropped_item, enemy.world_position)
@@ -309,7 +324,7 @@ func _on_enemy_died(enemy: EnemyBase, experience_value: int) -> void:
 		if wave_manager.running:
 			wave_manager.notify_boss_defeated()
 		return
-	if running:
+	if running and (enemy.definition == null or enemy.definition.grants_experience):
 		_spawn_experience(enemy.world_position, experience_value)
 
 func _spawn_world_item(item: ItemInstance, spawn_position: Vector2) -> WorldItemDrop:

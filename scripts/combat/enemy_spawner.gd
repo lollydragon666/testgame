@@ -4,6 +4,7 @@ extends Node
 signal enemy_died(enemy: EnemyBase, experience_value: int)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: float)
 signal arrow_requested(origin: Vector2, direction: Vector2, damage: float)
+signal summon_requested(summoner: EnemyBase, count: int)
 signal spell_requested(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float)
 
 var game_content: GameContent
@@ -30,7 +31,7 @@ func configure_seed(seed_value: int) -> void:
 	random.seed = seed_value if seed_value != 0 else 1
 
 func spawn(enemy_id: StringName, difficulty: float = 1.0, requested_position := Vector2.INF, is_elite := false) -> EnemyBase:
-	if not _is_configured() or world_state.enemy_count() >= world_config.max_active_enemies:
+	if not _is_configured() or world_state.active_enemy_count() >= world_config.max_active_enemies:
 		return null
 	var definition := game_content.enemy(enemy_id)
 	if definition == null or definition.scene == null:
@@ -55,6 +56,7 @@ func spawn(enemy_id: StringName, difficulty: float = 1.0, requested_position := 
 	enemy.died.connect(_relay_enemy_died)
 	enemy.projectile_requested.connect(_relay_projectile)
 	enemy.arrow_requested.connect(_relay_arrow)
+	enemy.summon_requested.connect(_relay_summon)
 	enemy.spell_requested.connect(_relay_spell)
 	world_state.register_enemy(enemy)
 	world_root.add_child(enemy)
@@ -62,7 +64,7 @@ func spawn(enemy_id: StringName, difficulty: float = 1.0, requested_position := 
 
 func spawn_many(enemy_id: StringName, count: int, difficulty: float = 1.0) -> int:
 	var spawned := 0
-	var allowed := mini(maxi(0, count), world_config.max_active_enemies - world_state.enemy_count())
+	var allowed := mini(maxi(0, count), world_config.max_active_enemies - world_state.active_enemy_count())
 	for _index in allowed:
 		if spawn(enemy_id, difficulty) != null:
 			spawned += 1
@@ -95,6 +97,9 @@ func _relay_projectile(origin: Vector2, direction: Vector2, damage: float) -> vo
 
 func _relay_arrow(origin: Vector2, direction: Vector2, damage: float) -> void:
 	arrow_requested.emit(origin, direction, damage)
+
+func _relay_summon(summoner: EnemyBase, count: int) -> void:
+	summon_requested.emit(summoner, count)
 
 func _relay_spell(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float) -> void:
 	spell_requested.emit(spell_kind, origin, direction, damage)
