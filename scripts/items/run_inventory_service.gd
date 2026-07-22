@@ -8,10 +8,12 @@ signal run_inventory_changed
 const CAPACITY := 40
 
 var game_content: GameContent
+var item_factory := ItemFactory.new()
 var _items: Array[ItemInstance] = []
 
 func configure(content: GameContent) -> void:
 	game_content = content
+	item_factory.configure(content)
 	clear()
 
 ## Stores the exact instance created by the loot roll. Run loot is never stacked
@@ -31,6 +33,7 @@ func can_add_item(item: ItemInstance) -> bool:
 		and not item.instance_id.is_empty()
 		and item.quantity > 0
 		and game_content.item(item.definition_id) != null
+		and item_factory.validate_item_instance(item)
 		and find_item(item.instance_id) == null
 		and _items.size() < CAPACITY
 	)
@@ -68,4 +71,3 @@ func clear() -> void:
 		return
 	_items.clear()
 	run_inventory_changed.emit()
-

@@ -181,8 +181,15 @@ func complete_run_successfully() -> bool:
 	if run_context.state != RunContext.RunState.ACTIVE or run_context.rewards_committed:
 		return false
 	var run_items := run_inventory.get_items()
+	var validator := ItemFactory.new()
+	validator.configure(GAME_CONTENT)
 	for item in run_items:
-		if item == null or item.instance_id.is_empty() or GAME_CONTENT.item(item.definition_id) == null:
+		if (
+			item == null
+			or not validator.validate_item_instance(item)
+			or inventory.permanent_item(item.instance_id) != null
+			or pending_run_rewards.find_item(item.instance_id) != null
+		):
 			return false
 	var previous_items := inventory.serialized_items()
 	var previous_equipment := inventory.serialized_equipment()
