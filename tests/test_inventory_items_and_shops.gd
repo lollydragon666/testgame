@@ -71,13 +71,13 @@ func _validate_inventory() -> void:
 	_require(inventory.equipped_instance_id(ItemEnums.EquipmentSlot.WEAPON) == first_starter_id, "Starter sword instance ID changed during load")
 
 	inventory.clear_for_tests()
-	var inventory_changed_count := 0
-	inventory.inventory_changed.connect(func(): inventory_changed_count += 1)
+	var inventory_changed_count := [0]
+	inventory.inventory_changed.connect(func(): inventory_changed_count[0] += 1)
 	for _index in InventoryService.CAPACITY:
 		_require(inventory.add_item_by_definition(&"old_gladius"), "Non-stackable item could not fill an available slot")
 	_require(inventory.inventory_size() == InventoryService.CAPACITY, "Inventory capacity is not 40")
 	_require(not inventory.add_item_by_definition(&"old_gladius"), "Inventory accepted item beyond capacity")
-	_require(inventory_changed_count == InventoryService.CAPACITY, "Inventory change signal count is incorrect")
+	_require(inventory_changed_count[0] == InventoryService.CAPACITY, "Inventory change signal count is incorrect")
 	_require(not inventory.add_item_by_definition(&"missing_item"), "Unknown item definition was accepted")
 
 	inventory.clear_for_tests()
@@ -136,16 +136,16 @@ func _validate_shops() -> void:
 	var inventory := _inventory()
 	var profile := PlayerProfile.new()
 	profile.gold = 1000
-	var save_count := 0
-	var gold_seen_by_inventory_signal := -1
-	inventory.inventory_changed.connect(func(): gold_seen_by_inventory_signal = profile.gold)
+	var save_count := [0]
+	var gold_seen_by_inventory_signal := [-1]
+	inventory.inventory_changed.connect(func(): gold_seen_by_inventory_signal[0] = profile.gold)
 	var shop := ShopService.new()
-	shop.configure(CONTENT, inventory, profile, func(): save_count += 1)
+	shop.configure(CONTENT, inventory, profile, func(): save_count[0] += 1)
 	var price := CONTENT.item(&"old_gladius").base_price
 	_require(shop.buy_item(&"blacksmith", &"old_gladius"), "Valid blacksmith purchase failed")
 	_require(profile.gold == 1000 - price, "Purchase did not deduct exact price")
-	_require(gold_seen_by_inventory_signal == profile.gold, "Inventory signal exposed purchase before currency deduction")
-	_require(save_count == 1, "Successful purchase did not request a save")
+	_require(gold_seen_by_inventory_signal[0] == profile.gold, "Inventory signal exposed purchase before currency deduction")
+	_require(save_count[0] == 1, "Successful purchase did not request a save")
 	var purchased: ItemInstance
 	for item in inventory.get_items():
 		if item.definition_id == &"old_gladius": purchased = item
@@ -156,7 +156,7 @@ func _validate_shops() -> void:
 	profile.gold = 0
 	_require(not shop.buy_item(&"blacksmith", &"iron_sabre"), "Purchase succeeded without enough gold")
 	_require(shop.sell_item(purchased.instance_id), "Valid item sale failed")
-	_require(gold_seen_by_inventory_signal == profile.gold, "Inventory signal exposed sale before currency grant")
+	_require(gold_seen_by_inventory_signal[0] == profile.gold, "Inventory signal exposed sale before currency grant")
 	_require(inventory.find_item(purchased.instance_id) == null, "Sold item remained in inventory")
 	var starter_id := inventory.equipped_instance_id(ItemEnums.EquipmentSlot.WEAPON)
 	_require(not shop.can_sell(starter_id), "Starter sword can be sold")

@@ -55,6 +55,11 @@ func _connect_debug_ui(debug_ui: SandboxUI) -> void:
 func _spawn_enemy(enemy_id: StringName, count: int) -> void:
 	combat.debug_spawn_enemy(enemy_id, count)
 
+func execute_item_debug_command(command_text: String) -> ItemInstance:
+	if combat == null:
+		return null
+	return RandomItemDebugCommand.execute(command_text, combat.inventory_service, CONTENT)
+
 func _give_level() -> void:
 	var amount := maxi(1, combat.player.experience_required - combat.player.experience)
 	combat.debug_give_experience(amount)
