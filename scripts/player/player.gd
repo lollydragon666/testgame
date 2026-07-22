@@ -7,6 +7,13 @@ signal experience_changed(current: int, required: int, level: int)
 signal level_up_requested(level: int)
 signal magic_cast_requested(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float, spell_level: int)
 signal magic_changed(spell_kind: StringName, spell_level: int)
+signal dash_status_changed(cooldown_remaining: float, cooldown_duration: float, active: bool)
+
+const DASH_DISTANCE := 165.0
+const DASH_COOLDOWN := 1.1
+const DASH_DURATION := 0.16
+const DASH_INVULNERABILITY := 0.18
+const DASH_COLLISION_STEP := 12.0
 
 ## Логическая позиция героя; Node2D.position содержит её изометрическую проекцию.
 var world_position := Vector2.ZERO
@@ -32,6 +39,11 @@ var haste_cooldown_multiplier := 1.0
 var armor_damage_reduction := 0.0
 ## Локальный бонус радиуса магнита, не изменяющий общий WorldConfig.
 var magnet_range_bonus := 0.0
+var dash_cooldown_remaining := 0.0
+var dash_time_remaining := 0.0
+var dash_distance_remaining := 0.0
+var dash_direction := Vector2.RIGHT
+var is_dashing := false
 
 # Компоненты объявлены в player.tscn, а поведенческий скрипт только связывает их.
 @onready var movement: PlayerMovement = $Movement
@@ -71,25 +83,90 @@ func set_combat_registry(state: WorldState) -> void:
 	attack.set_world_state(state)
 
 func set_gameplay_active(active: bool) -> void:
+	if not active:
+		_cancel_dash()
 	process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
 
 func _physics_process(delta: float) -> void:
 	if not is_alive or world_config == null:
 		return
 	invulnerability = maxf(0.0, invulnerability - delta)
+	dash_cooldown_remaining = maxf(0.0, dash_cooldown_remaining - delta)
 	input_state.sample(global_position, get_global_mouse_position())
 	aim_direction = input_state.aim_world
-	var previous_position := world_position
-	world_position = movement.step(delta, world_position, world_limit, input_state.movement_screen)
-	if world_state != null:
-		world_position = world_state.resolve_obstacle_motion(previous_position, world_position, collision_radius)
+	if input_state.dash_pressed:
+		try_start_dash(input_state.movement_screen)
+	if is_dashing:
+		_step_dash(delta)
+	else:
+		var previous_position := world_position
+		world_position = movement.step(delta, world_position, world_limit, input_state.movement_screen)
+		if world_state != null:
+			world_position = world_state.resolve_obstacle_motion(previous_position, world_position, collision_radius)
 	# Камера следует за героем, поэтому сам герой остаётся около центра экрана.
 	position = IsoMath.world_to_screen(world_position)
-	if input_state.attack_pressed:
+	if not is_dashing and input_state.attack_pressed:
 		attack.try_attack()
-	if input_state.magic_pressed:
+	if not is_dashing and input_state.magic_pressed:
 		magic.try_cast()
+	dash_status_changed.emit(dash_cooldown_remaining, DASH_COOLDOWN, is_dashing)
 	refresh_visual()
+
+func try_start_dash(movement_screen_input: Vector2 = Vector2.ZERO) -> bool:
+	if is_dashing or dash_cooldown_remaining > 0.0 or not is_alive or world_config == null:
+		return false
+	var requested_direction := aim_direction
+	if movement_screen_input.length_squared() > 0.0:
+		requested_direction = IsoMath.world_direction_from_screen(movement_screen_input)
+	if requested_direction.is_zero_approx():
+		return false
+	dash_direction = requested_direction.normalized()
+	dash_distance_remaining = DASH_DISTANCE
+	dash_time_remaining = DASH_DURATION
+	dash_cooldown_remaining = DASH_COOLDOWN
+	is_dashing = true
+	invulnerability = maxf(invulnerability, DASH_INVULNERABILITY)
+	movement.velocity = Vector2.ZERO
+	dash_status_changed.emit(dash_cooldown_remaining, DASH_COOLDOWN, true)
+	return true
+
+func _step_dash(delta: float) -> void:
+	if not is_dashing:
+		return
+	var dash_speed := DASH_DISTANCE / DASH_DURATION
+	var requested_distance := minf(dash_distance_remaining, dash_speed * delta)
+	var step_count := maxi(1, ceili(requested_distance / DASH_COLLISION_STEP))
+	var step_distance := requested_distance / float(step_count)
+	for _step_index in step_count:
+		var previous_position := world_position
+		var candidate := (world_position + dash_direction * step_distance).clamp(
+			Vector2.ONE * -world_limit,
+			Vector2.ONE * world_limit
+		)
+		if world_state != null:
+			candidate = world_state.resolve_obstacle_motion(world_position, candidate, collision_radius)
+		var moved_distance := previous_position.distance_to(candidate)
+		if moved_distance <= 0.001:
+			_finish_dash()
+			break
+		world_position = candidate
+		dash_distance_remaining = maxf(0.0, dash_distance_remaining - moved_distance)
+		if world_position.x <= -world_limit or world_position.x >= world_limit or world_position.y <= -world_limit or world_position.y >= world_limit:
+			_finish_dash()
+			break
+	dash_time_remaining = maxf(0.0, dash_time_remaining - delta)
+	if is_dashing and (dash_time_remaining <= 0.0 or dash_distance_remaining <= 0.001):
+		_finish_dash()
+
+func _finish_dash() -> void:
+	is_dashing = false
+	dash_time_remaining = 0.0
+	dash_distance_remaining = 0.0
+	movement.velocity = Vector2.ZERO
+
+func _cancel_dash() -> void:
+	_finish_dash()
+	dash_status_changed.emit(dash_cooldown_remaining, DASH_COOLDOWN, false)
 
 func experience_magnet_range() -> float:
 	return attack.attack_reach + world_config.pickup_magnet_extra_range + magnet_range_bonus
@@ -176,6 +253,11 @@ func reset_run() -> void:
 	haste_cooldown_multiplier = 1.0
 	armor_damage_reduction = 0.0
 	magnet_range_bonus = 0.0
+	dash_cooldown_remaining = 0.0
+	dash_time_remaining = 0.0
+	dash_distance_remaining = 0.0
+	dash_direction = Vector2.RIGHT
+	is_dashing = false
 	movement.speed = 195.0
 	movement.reset()
 	attack.reset()
@@ -184,6 +266,7 @@ func reset_run() -> void:
 	hurtbox.set_collision_radius(collision_radius)
 	health_changed.emit(health, max_health)
 	experience_changed.emit(experience, experience_required, level)
+	dash_status_changed.emit(0.0, DASH_COOLDOWN, false)
 	refresh_visual()
 
 func refresh_visual() -> void:

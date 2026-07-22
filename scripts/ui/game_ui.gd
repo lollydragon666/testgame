@@ -24,6 +24,7 @@ var xp_label: Label
 var wave_label: Label
 var level_label: Label
 var magic_label: Label
+var dash_label: Label
 var game_over_title: Label
 var upgrade_buttons: Dictionary[StringName, Button] = {}
 var upgrade_delay_timer: Timer
@@ -91,6 +92,11 @@ func _build_menu() -> void:
 	magic_controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	magic_controls.add_theme_color_override("font_color", Color("7fa9d8"))
 	box.add_child(magic_controls)
+	var dash_controls := Label.new()
+	dash_controls.text = "SPACE — рывок"
+	dash_controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dash_controls.add_theme_color_override("font_color", Color("d0ad64"))
+	box.add_child(dash_controls)
 
 func _build_hud() -> void:
 	hud = Control.new()
@@ -158,6 +164,19 @@ func _build_hud() -> void:
 	magic_label.add_theme_font_size_override("font_size", 18)
 	magic_label.add_theme_color_override("font_color", Color("7fa9d8"))
 	bottom_right.add_child(magic_label)
+
+	var bottom_center := MarginContainer.new()
+	bottom_center.name = "BottomCenterContainer"
+	bottom_center.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	bottom_center.offset_left = -110.0
+	bottom_center.offset_top = -55.0
+	bottom_center.offset_right = 110.0
+	bottom_center.offset_bottom = -24.0
+	hud.add_child(bottom_center)
+	dash_label = Label.new()
+	dash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dash_label.add_theme_font_size_override("font_size", 16)
+	bottom_center.add_child(dash_label)
 
 func _build_upgrade_panel() -> void:
 	upgrade_panel = ColorRect.new()
@@ -313,3 +332,14 @@ func set_magic(spell_kind: StringName, spell_level: int) -> void:
 		return
 	var short_name := definition.display_name.get_slice(" — ", 0)
 	magic_label.text = "МАГИЯ: %s · УР. %d · ПКМ" % [short_name, spell_level]
+
+func set_dash_status(cooldown_remaining: float, _cooldown_duration: float, active: bool) -> void:
+	if active:
+		dash_label.text = "РЫВОК"
+		dash_label.add_theme_color_override("font_color", Color("b9dcff"))
+	elif cooldown_remaining <= 0.0:
+		dash_label.text = "РЫВОК: ГОТОВ"
+		dash_label.add_theme_color_override("font_color", Color("7fb069"))
+	else:
+		dash_label.text = "РЫВОК: %.1fс" % cooldown_remaining
+		dash_label.add_theme_color_override("font_color", Color("8f7c61"))

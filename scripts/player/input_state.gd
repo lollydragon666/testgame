@@ -7,6 +7,7 @@ var movement_screen := Vector2.ZERO
 var aim_world := Vector2.RIGHT
 var attack_pressed := false
 var magic_pressed := false
+var dash_pressed := false
 
 func sample(player_screen_position: Vector2, mouse_screen_position: Vector2) -> void:
 	movement_screen = Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -15,9 +16,11 @@ func sample(player_screen_position: Vector2, mouse_screen_position: Vector2) -> 
 		aim_world = IsoMath.world_direction_from_screen(mouse_delta)
 	attack_pressed = Input.is_action_just_pressed("attack")
 	magic_pressed = Input.is_action_just_pressed("cast_magic")
+	dash_pressed = Input.is_action_just_pressed("dash")
 
 func reset() -> void:
 	movement_screen = Vector2.ZERO
 	aim_world = Vector2.RIGHT
 	attack_pressed = false
 	magic_pressed = false
+	dash_pressed = false

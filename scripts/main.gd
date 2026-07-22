@@ -52,6 +52,7 @@ func _ready() -> void:
 	player.level_up_requested.connect(_on_level_up)
 	player.magic_cast_requested.connect(_spawn_player_magic)
 	player.magic_changed.connect(_on_magic_changed)
+	player.dash_status_changed.connect(_on_dash_status_changed)
 	player.died.connect(_on_player_died)
 	player.set_gameplay_active(false)
 
@@ -74,6 +75,7 @@ func _ready() -> void:
 	ui.set_experience(player.experience, player.experience_required, player.level)
 	ui.set_wave(1)
 	ui.set_magic(&"", 0)
+	ui.set_dash_status(0.0, PlayerHero.DASH_COOLDOWN, false)
 
 func _start_run() -> void:
 	get_tree().paused = false
@@ -300,6 +302,10 @@ func _apply_upgrade(kind: StringName) -> bool:
 
 func _on_magic_changed(spell_kind: StringName, spell_level: int) -> void:
 	ui.set_magic(spell_kind, spell_level)
+
+func _on_dash_status_changed(cooldown_remaining: float, cooldown_duration: float, active: bool) -> void:
+	if ui != null:
+		ui.set_dash_status(cooldown_remaining, cooldown_duration, active)
 
 func _on_player_died() -> void:
 	_finish_run(false)
