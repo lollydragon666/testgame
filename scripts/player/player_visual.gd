@@ -36,13 +36,27 @@ func _draw_sword(player: PlayerHero, world_direction: Vector2) -> void:
 	var direction := IsoMath.world_to_screen(world_direction).normalized()
 	var side := direction.orthogonal()
 	var is_final_tier := player.attack.definition != null and player.attack.sword_tier == player.attack.definition.max_tier
-	var guard_distance := player.visual_radius + (18.0 if is_final_tier else 6.0)
+	var style := player.attack.definition.visual_style if player.attack.definition != null else &"gladius"
+	var style_variant := absi(String(style).hash()) % 4
+	var guard_distance := player.visual_radius + (18.0 if is_final_tier else 6.0) + float(style_variant)
 	var blade_base := direction * (guard_distance + 5.0)
 	var tip := direction * player.attack.visual_sword_length
-	draw_line(direction * player.visual_radius * 0.55, blade_base, Color("35271d"), 7.0)
-	draw_line(direction * guard_distance - side * (8.0 + player.attack.sword_tier * 3.0), direction * guard_distance + side * (8.0 + player.attack.sword_tier * 3.0), Color("a8874d"), 6.0)
-	var width := 5.0 + player.attack.sword_tier * 0.8
-	var shoulder := tip - direction * (14.0 + player.attack.sword_tier * 2.0)
+	var palette := _weapon_palette(style)
+	var guard_half_width := 8.0 + player.attack.sword_tier * 3.0 + float(style_variant) * 2.0
+	draw_line(direction * player.visual_radius * 0.55, blade_base, palette["grip"], 7.0)
+	draw_line(direction * guard_distance - side * guard_half_width, direction * guard_distance + side * guard_half_width, palette["guard"], 6.0)
+	var width := 5.0 + player.attack.sword_tier * 0.8 + float(style_variant) * 0.7
+	var shoulder := tip - direction * (14.0 + player.attack.sword_tier * 2.0 + float(style_variant) * 2.0)
 	var blade := PackedVector2Array([blade_base - side * width, shoulder - side * width, tip, shoulder + side * width, blade_base + side * width])
-	draw_colored_polygon(blade, Color("d4c4a4"))
-	draw_polyline(PackedVector2Array([blade_base - side * width, shoulder - side * width, tip, shoulder + side * width, blade_base + side * width]), Color("574637"), 1.5)
+	draw_colored_polygon(blade, palette["blade"])
+	draw_polyline(PackedVector2Array([blade_base - side * width, shoulder - side * width, tip, shoulder + side * width, blade_base + side * width]), palette["edge"], 1.5)
+
+func _weapon_palette(style: StringName) -> Dictionary:
+	var palettes := {
+		&"void": {"blade": Color("66547f"), "edge": Color("b69ad8"), "guard": Color("31243f"), "grip": Color("17101e")},
+		&"sunforged": {"blade": Color("f0c65a"), "edge": Color("fff0a1"), "guard": Color("b97921"), "grip": Color("5a2d17")},
+		&"dragon": {"blade": Color("d8d0bd"), "edge": Color("fff2d2"), "guard": Color("9c3d29"), "grip": Color("3b1915")},
+		&"storm": {"blade": Color("9ac7dc"), "edge": Color("e2f5ff"), "guard": Color("547d91"), "grip": Color("253b45")},
+		&"royal": {"blade": Color("d7d5c8"), "edge": Color("fff8d1"), "guard": Color("d0ad64"), "grip": Color("4c263f")},
+	}
+	return palettes.get(style, {"blade": Color("d4c4a4"), "edge": Color("574637"), "guard": Color("a8874d"), "grip": Color("35271d")})

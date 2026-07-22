@@ -39,6 +39,7 @@ var run_random := RandomNumberGenerator.new()
 var pending_level_ups := 0
 ## Не более трёх ID, показанных в текущем окне. Только они принимаются _apply_upgrade().
 var current_upgrade_choices: Array[StringName] = []
+var inventory_service: InventoryService
 
 const MAX_UPGRADE_CHOICES := 3
 
@@ -48,6 +49,9 @@ func configure_mode(config: CombatModeConfig, start_automatically := true) -> vo
 
 func configure_run_seed(value: int) -> void:
 	run_seed = value
+
+func configure_inventory(service: InventoryService) -> void:
+	inventory_service = service
 
 func configure_expedition(location_definition: LocationDefinition, tier_definition: ExpeditionTierDefinition, seed_value: int) -> void:
 	expedition_location = location_definition
@@ -61,6 +65,10 @@ func _ready() -> void:
 		expedition_location = GAME_CONTENT.location(&"test_location")
 	if expedition_tier == null and expedition_location != null:
 		expedition_tier = expedition_location.tier_definition(1)
+	if inventory_service == null:
+		inventory_service = InventoryService.new()
+		inventory_service.configure(GAME_CONTENT)
+		inventory_service.load_serialized([], {})
 	world_state = WorldState.new()
 	world_state.name = "WorldState"
 	world_state.configure(WORLD_CONFIG)
@@ -77,6 +85,7 @@ func _ready() -> void:
 	player.name = "Player"
 	player.configure_world(WORLD_CONFIG)
 	player.configure_content(GAME_CONTENT)
+	player.configure_inventory(inventory_service)
 	world_root.add_child(player)
 	player.set_combat_registry(world_state)
 	player.health_changed.connect(_on_health_changed)
@@ -139,6 +148,8 @@ func _start_run() -> void:
 	location.regenerate(run_seed)
 	_register_location_destructibles()
 	player.reset_run()
+	player.apply_equipped_weapon()
+	player.apply_equipment_stats(PlayerStatCalculator.calculate(inventory_service))
 	run_setup_requested.emit(player)
 	player.set_gameplay_active(true)
 	running = true

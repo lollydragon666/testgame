@@ -23,6 +23,7 @@ func _ready() -> void:
 	combat = COMBAT_SCENE.instantiate() as GameMain
 	combat.name = "Combat"
 	combat.configure_mode(CombatModeConfig.expedition(), true)
+	combat.configure_inventory(_session().inventory)
 	combat.configure_expedition(location_definition, tier_definition, _session().current_run_seed)
 	combat.run_setup_requested.connect(_apply_profile_bonuses)
 	combat.run_finished.connect(_on_run_finished)

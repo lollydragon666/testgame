@@ -36,11 +36,20 @@ var host: PlayerHero
 var world_state: WorldState
 var attack_shape := AttackShape.new()
 var definition: WeaponDefinition
+var equipped_item: ItemInstance
 
-func setup(player_host: PlayerHero, weapon_definition: WeaponDefinition) -> void:
+func setup(player_host: PlayerHero, weapon_definition: WeaponDefinition, weapon_item: ItemInstance = null) -> void:
 	host = player_host
+	equip_weapon(weapon_definition, weapon_item)
+
+func equip_weapon(weapon_definition: WeaponDefinition, weapon_item: ItemInstance = null) -> void:
+	if weapon_definition == null or weapon_definition.weapon_class != ItemEnums.SWORD_CLASS:
+		return
 	definition = weapon_definition
+	equipped_item = weapon_item
 	reset()
+	if host != null and host.is_node_ready():
+		host.refresh_visual()
 
 func set_world_state(state: WorldState) -> void:
 	world_state = state

@@ -66,6 +66,7 @@ var input_state := InputState.new()
 var world_config: WorldConfig
 var game_content: GameContent
 var world_state: WorldState
+var inventory_service: InventoryService
 
 var world_limit: float:
 	get:
@@ -77,11 +78,24 @@ func configure_world(config: WorldConfig) -> void:
 func configure_content(content: GameContent) -> void:
 	game_content = content
 
+func configure_inventory(service: InventoryService) -> void:
+	inventory_service = service
+
 func _ready() -> void:
 	if game_content == null:
 		push_error("PlayerHero requires GameContent before entering the tree")
 		return
-	attack.setup(self, game_content.weapon(&"player_sword"))
+	if inventory_service == null:
+		inventory_service = InventoryService.new()
+		inventory_service.configure(game_content)
+		inventory_service.load_serialized([], {})
+	var equipped_weapon := inventory_service.equipped_item(ItemEnums.EquipmentSlot.WEAPON)
+	var weapon_definition := inventory_service.equipped_definition(ItemEnums.EquipmentSlot.WEAPON) as WeaponDefinition
+	if weapon_definition == null:
+		push_error("PlayerHero requires an equipped sword")
+		return
+	attack.setup(self, weapon_definition, equipped_weapon)
+	inventory_service.equipment_changed.connect(_on_equipment_changed)
 	magic.setup(self, game_content)
 	magic.cast_requested.connect(_relay_magic_cast)
 	magic.magic_changed.connect(_relay_magic_changed)
@@ -255,11 +269,14 @@ func apply_profile_bonuses(max_health_bonus: float, damage_bonus: float) -> void
 	health_changed.emit(health, max_health)
 
 func apply_equipment_stats(stats: PlayerStats) -> void:
+	var previous_health_bonus := equipment_stats.max_health_bonus
+	var previous_movement_factor := maxf(0.25, 1.0 + equipment_stats.movement_speed_bonus)
 	equipment_stats = stats if stats != null else PlayerStats.new()
 	equipment_stats.finalize()
-	max_health += equipment_stats.max_health_bonus
-	health = minf(max_health, health + equipment_stats.max_health_bonus)
-	movement.speed *= maxf(0.25, 1.0 + equipment_stats.movement_speed_bonus)
+	var health_delta := equipment_stats.max_health_bonus - previous_health_bonus
+	max_health = maxf(1.0, max_health + health_delta)
+	health = clampf(health + maxf(0.0, health_delta), 0.0, max_health)
+	movement.speed = movement.speed / previous_movement_factor * maxf(0.25, 1.0 + equipment_stats.movement_speed_bonus)
 	equipment_damage_multiplier = maxf(0.05, 1.0 + equipment_stats.damage_bonus)
 	equipment_attack_speed_bonus = equipment_stats.attack_speed_bonus
 	equipment_defense = equipment_stats.defense
@@ -268,6 +285,21 @@ func apply_equipment_stats(stats: PlayerStats) -> void:
 	critical_damage = equipment_stats.critical_damage
 	health_changed.emit(health, max_health)
 	player_stats_changed.emit(equipment_stats)
+
+func apply_equipped_weapon() -> bool:
+	if inventory_service == null:
+		return false
+	var weapon_item := inventory_service.equipped_item(ItemEnums.EquipmentSlot.WEAPON)
+	var weapon_definition := inventory_service.equipped_definition(ItemEnums.EquipmentSlot.WEAPON) as WeaponDefinition
+	if weapon_item == null or weapon_definition == null:
+		return false
+	attack.equip_weapon(weapon_definition, weapon_item)
+	refresh_visual()
+	return true
+
+func _on_equipment_changed() -> void:
+	apply_equipped_weapon()
+	apply_equipment_stats(PlayerStatCalculator.calculate(inventory_service))
 
 func roll_attack_damage(base_amount: float) -> float:
 	var result := base_amount * equipment_damage_multiplier
