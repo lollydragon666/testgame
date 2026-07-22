@@ -49,10 +49,13 @@ var dash_distance_remaining := 0.0
 var dash_direction := Vector2.RIGHT
 var is_dashing := false
 var equipment_stats := PlayerStats.new()
+var equipment_flat_damage_bonus := 0.0
 var equipment_damage_multiplier := 1.0
 var equipment_attack_speed_bonus := 0.0
 var equipment_defense := 0.0
 var equipment_loot_chance := 0.0
+var equipment_attack_reach_bonus := 0.0
+var equipment_attack_width_bonus := 0.0
 var critical_chance := 0.0
 var critical_damage := 1.5
 var combat_random := RandomNumberGenerator.new()
@@ -208,7 +211,7 @@ func _cancel_dash() -> void:
 	dash_status_changed.emit(dash_cooldown_remaining, DASH_COOLDOWN, false)
 
 func experience_magnet_range() -> float:
-	return attack.attack_reach + world_config.pickup_magnet_extra_range + magnet_range_bonus
+	return attack.effective_attack_reach() + world_config.pickup_magnet_extra_range + magnet_range_bonus
 
 func experience_magnet_speed(distance: float) -> float:
 	return world_config.pickup_magnet_base_speed + maxf(
@@ -339,17 +342,20 @@ func clear_temporary_effects() -> void:
 
 func apply_equipment_stats(stats: PlayerStats) -> void:
 	var previous_health_bonus := equipment_stats.max_health_bonus
-	var previous_movement_factor := maxf(0.25, 1.0 + equipment_stats.movement_speed_bonus)
+	var previous_movement_factor := equipment_stats.movement_multiplier()
 	equipment_stats = stats if stats != null else PlayerStats.new()
 	equipment_stats.finalize()
 	var health_delta := equipment_stats.max_health_bonus - previous_health_bonus
 	max_health = maxf(1.0, max_health + health_delta)
 	health = clampf(health + maxf(0.0, health_delta), 0.0, max_health)
-	movement.speed = movement.speed / previous_movement_factor * maxf(0.25, 1.0 + equipment_stats.movement_speed_bonus)
-	equipment_damage_multiplier = maxf(0.05, 1.0 + equipment_stats.damage_bonus)
+	movement.speed = movement.speed / previous_movement_factor * equipment_stats.movement_multiplier()
+	equipment_flat_damage_bonus = equipment_stats.flat_damage_bonus
+	equipment_damage_multiplier = equipment_stats.damage_multiplier()
 	equipment_attack_speed_bonus = equipment_stats.attack_speed_bonus
 	equipment_defense = equipment_stats.defense
 	equipment_loot_chance = equipment_stats.loot_chance
+	equipment_attack_reach_bonus = equipment_stats.attack_reach_bonus
+	equipment_attack_width_bonus = equipment_stats.attack_width_bonus
 	critical_chance = equipment_stats.critical_chance
 	critical_damage = equipment_stats.critical_damage
 	health_changed.emit(health, max_health)
@@ -400,10 +406,13 @@ func reset_run() -> void:
 	dash_direction = Vector2.RIGHT
 	is_dashing = false
 	equipment_stats = PlayerStats.new()
+	equipment_flat_damage_bonus = 0.0
 	equipment_damage_multiplier = 1.0
 	equipment_attack_speed_bonus = 0.0
 	equipment_defense = 0.0
 	equipment_loot_chance = 0.0
+	equipment_attack_reach_bonus = 0.0
+	equipment_attack_width_bonus = 0.0
 	critical_chance = 0.0
 	critical_damage = 1.5
 	temporary_damage_bonus = 0.0

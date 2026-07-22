@@ -29,7 +29,7 @@ func _draw_swing_trail(player: PlayerHero, weapon_aim: Vector2) -> void:
 		var progress := float(index) / 23.0
 		var world_direction := weapon_aim.rotated(lerpf(start_offset, current_offset, progress))
 		var screen_direction := IsoMath.world_to_screen(world_direction).normalized()
-		trail.append(screen_direction * player.attack.visual_sword_length)
+		trail.append(screen_direction * player.attack.effective_visual_sword_length())
 	draw_polyline(trail, Color(0.69, 0.19, 0.16, 0.72), 10.0)
 
 func _draw_sword(player: PlayerHero, world_direction: Vector2) -> void:
@@ -40,7 +40,7 @@ func _draw_sword(player: PlayerHero, world_direction: Vector2) -> void:
 	var style_variant := absi(String(style).hash()) % 4
 	var guard_distance := player.visual_radius + (18.0 if is_final_tier else 6.0) + float(style_variant)
 	var blade_base := direction * (guard_distance + 5.0)
-	var tip := direction * player.attack.visual_sword_length
+	var tip := direction * player.attack.effective_visual_sword_length()
 	var palette := _weapon_palette(style)
 	var guard_half_width := 8.0 + player.attack.sword_tier * 3.0 + float(style_variant) * 2.0
 	draw_line(direction * player.visual_radius * 0.55, blade_base, palette["grip"], 7.0)

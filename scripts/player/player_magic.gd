@@ -57,7 +57,8 @@ func effective_spell_damage(spell_kind: StringName) -> float:
 	var base_value := definition.base_damage + level_offset * definition.damage_per_level
 	if host == null:
 		return base_value
-	return host.roll_attack_damage(base_value * host.profile_damage_multiplier * host.power_multiplier)
+	var damage_after_flat := base_value + host.equipment_flat_damage_bonus
+	return host.roll_attack_damage(damage_after_flat * host.profile_damage_multiplier * host.power_multiplier)
 
 func effective_spell_cooldown(spell_kind: StringName) -> float:
 	var definition := game_content.spell(spell_kind) if game_content != null else null

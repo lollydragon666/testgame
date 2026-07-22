@@ -85,7 +85,7 @@ func _hit_groups_between(from_offset: float, to_offset: float) -> void:
 	_hit_destructibles_between(from_offset, to_offset)
 
 func _hit_enemies_between(from_offset: float, to_offset: float) -> void:
-	var query_radius := host.collision_radius + attack_reach + 80.0
+	var query_radius := host.collision_radius + effective_attack_reach() + 80.0
 	for enemy in world_state.enemies_near(host.world_position, query_radius):
 		if not is_instance_valid(enemy) or not enemy.is_alive:
 			continue
@@ -97,7 +97,7 @@ func _hit_enemies_between(from_offset: float, to_offset: float) -> void:
 			enemy.take_damage(effective_damage(), swing_aim_direction)
 
 func _hit_projectiles_between(from_offset: float, to_offset: float) -> void:
-	var query_radius := host.collision_radius + attack_reach + 48.0
+	var query_radius := host.collision_radius + effective_attack_reach() + 48.0
 	for projectile in world_state.enemy_projectiles_near(host.world_position, query_radius):
 		if not is_instance_valid(projectile):
 			continue
@@ -111,7 +111,7 @@ func _hit_projectiles_between(from_offset: float, to_offset: float) -> void:
 			projectile.destroy_by_sword()
 
 func _hit_destructibles_between(from_offset: float, to_offset: float) -> void:
-	var query_radius := host.collision_radius + attack_reach + 64.0
+	var query_radius := host.collision_radius + effective_attack_reach() + 64.0
 	for prop in world_state.destructibles_near(host.world_position, query_radius):
 		if not is_instance_valid(prop):
 			continue
@@ -130,8 +130,8 @@ func point_in_blade_sweep(target_world_position: Vector2, target_radius: float, 
 		host.world_position,
 		swing_aim_direction,
 		host.collision_radius + 5.0,
-		attack_reach,
-		attack_half_width
+		effective_attack_reach(),
+		effective_attack_half_width()
 	)
 	return attack_shape.intersects_swept_circle(target_world_position, target_radius, from_offset, to_offset)
 
@@ -167,7 +167,20 @@ func can_upgrade_sword() -> bool:
 func effective_damage() -> float:
 	if host == null:
 		return damage
-	return host.roll_attack_damage(damage * host.profile_damage_multiplier * host.power_multiplier)
+	var damage_after_flat := damage + host.equipment_flat_damage_bonus
+	return host.roll_attack_damage(damage_after_flat * host.profile_damage_multiplier * host.power_multiplier)
+
+func effective_attack_reach() -> float:
+	var multiplier := maxf(0.5, 1.0 + host.equipment_attack_reach_bonus) if host != null else 1.0
+	return attack_reach * multiplier
+
+func effective_attack_half_width() -> float:
+	var multiplier := maxf(0.5, 1.0 + host.equipment_attack_width_bonus) if host != null else 1.0
+	return attack_half_width * multiplier
+
+func effective_visual_sword_length() -> float:
+	var multiplier := effective_attack_reach() / maxf(1.0, attack_reach)
+	return visual_sword_length * multiplier
 
 func effective_cooldown_duration() -> float:
 	var haste_multiplier := host.haste_cooldown_multiplier if host != null else 1.0
