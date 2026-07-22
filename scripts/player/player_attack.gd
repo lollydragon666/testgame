@@ -74,11 +74,15 @@ func try_attack() -> void:
 
 func _hit_groups_between(from_offset: float, to_offset: float) -> void:
 	# Проверяется пройденный за кадр участок дуги, а не только текущая позиция меча.
-	_hit_enemies_between(from_offset, to_offset)
+	_configure_attack_shape()
+	var segment_damage := effective_damage()
+	_hit_enemies_between(from_offset, to_offset, segment_damage)
 	_hit_projectiles_between(from_offset, to_offset)
 	_hit_destructibles_between(from_offset, to_offset)
 
-func _hit_enemies_between(from_offset: float, to_offset: float) -> void:
+
+func _hit_enemies_between(from_offset: float, to_offset: float, segment_damage: float) -> void:
+	# 80 покрывает максимальный elite/boss collision radius и ширину клинка.
 	var query_radius := host.collision_radius + attack_reach + 80.0
 	world_state.enemies_near_into(host.world_position, query_radius, _enemy_query_buffer)
 	for enemy in _enemy_query_buffer:
@@ -87,11 +91,12 @@ func _hit_enemies_between(from_offset: float, to_offset: float) -> void:
 		var target_id := enemy.get_instance_id()
 		if hit_targets.has(target_id):
 			continue
-		if point_in_blade_sweep(enemy.world_position, enemy.collision_radius, from_offset, to_offset):
+		if _configured_shape_intersects(enemy.world_position, enemy.collision_radius, from_offset, to_offset):
 			hit_targets[target_id] = true
-			enemy.take_damage(effective_damage(), swing_aim_direction)
+			enemy.take_damage(segment_damage, swing_aim_direction)
 
 func _hit_projectiles_between(from_offset: float, to_offset: float) -> void:
+	# 48 сохраняет прежний запас для стрелы: collision radius, отбивание +7 и half-width.
 	var query_radius := host.collision_radius + attack_reach + 48.0
 	world_state.enemy_projectiles_near_into(host.world_position, query_radius, _projectile_query_buffer)
 	for projectile in _projectile_query_buffer:
@@ -102,11 +107,12 @@ func _hit_projectiles_between(from_offset: float, to_offset: float) -> void:
 			continue
 		var target_position: Vector2 = projectile.world_position
 		var target_radius: float = projectile.collision_radius + 7.0
-		if point_in_blade_sweep(target_position, target_radius, from_offset, to_offset):
+		if _configured_shape_intersects(target_position, target_radius, from_offset, to_offset):
 			hit_targets[target_id] = true
 			projectile.destroy_by_sword()
 
 func _hit_destructibles_between(from_offset: float, to_offset: float) -> void:
+	# 64 покрывает максимальный радиус разрушаемых PropDefinition с запасом.
 	var query_radius := host.collision_radius + attack_reach + 64.0
 	world_state.destructibles_near_into(host.world_position, query_radius, _destructible_query_buffer)
 	for prop in _destructible_query_buffer:
@@ -115,7 +121,7 @@ func _hit_destructibles_between(from_offset: float, to_offset: float) -> void:
 		var target_id := prop.get_instance_id()
 		if hit_targets.has(target_id):
 			continue
-		if point_in_blade_sweep(prop.world_position, prop.collision_radius, from_offset, to_offset):
+		if _configured_shape_intersects(prop.world_position, prop.collision_radius, from_offset, to_offset):
 			hit_targets[target_id] = true
 			prop.hit_by_sword()
 
@@ -123,6 +129,11 @@ func point_in_sweep(target_world_position: Vector2, target_radius: float = 0.0) 
 	return point_in_blade_sweep(target_world_position, target_radius, SWEEP_START, SWEEP_END)
 
 func point_in_blade_sweep(target_world_position: Vector2, target_radius: float, from_offset: float, to_offset: float) -> bool:
+	_configure_attack_shape()
+	return _configured_shape_intersects(target_world_position, target_radius, from_offset, to_offset)
+
+
+func _configure_attack_shape() -> void:
 	attack_shape.configure(
 		host.world_position,
 		swing_aim_direction,
@@ -130,6 +141,12 @@ func point_in_blade_sweep(target_world_position: Vector2, target_radius: float, 
 		attack_reach,
 		attack_half_width
 	)
+
+
+func _configured_shape_intersects(target_world_position: Vector2, target_radius: float, from_offset: float, to_offset: float) -> bool:
+	var maximum_distance := attack_shape.outer_radius + maxf(0.0, target_radius) + attack_shape.half_width
+	if attack_shape.origin.distance_squared_to(target_world_position) > maximum_distance * maximum_distance:
+		return false
 	return attack_shape.intersects_swept_circle(target_world_position, target_radius, from_offset, to_offset)
 
 func swing_offset() -> float:
