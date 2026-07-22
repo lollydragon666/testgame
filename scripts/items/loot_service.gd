@@ -8,11 +8,12 @@ const MAX_WORLD_ITEM_DROPS := 60
 
 var game_content: GameContent
 var _active_drops: Array[WorldItemDrop] = []
-var affix_generator := ItemAffixGenerator.new()
+var item_factory := ItemFactory.new()
+var rarity_roller := ItemRarityRoller.new()
 
 func configure(content: GameContent) -> void:
 	game_content = content
-	affix_generator.configure(content.item_affixes if content != null else null)
+	item_factory.configure(content)
 
 func roll_for_enemy(
 	enemy: EnemyBase,
@@ -39,8 +40,13 @@ func roll_for_enemy(
 	if definition == null:
 		return result
 	var quantity := rng.randi_range(maxi(1, entry.min_quantity), maxi(entry.min_quantity, entry.max_quantity))
-	var item := ItemInstance.create(definition.id, quantity, definition.rarity)
-	affix_generator.apply_to_item(item, definition, wave, rng)
+	var is_boss := enemy.definition.is_boss
+	var item_level := clampi(wave + (2 if is_boss else 1 if enemy.is_elite else 0), 1, 30)
+	var rarity := rarity_roller.roll(wave, rng, enemy.is_elite, is_boss)
+	var item := item_factory.create_random_item(definition.id, item_level, rarity, rng)
+	if item == null:
+		return result
+	item.quantity = quantity if definition.stackable else 1
 	result.append(item)
 	return result
 

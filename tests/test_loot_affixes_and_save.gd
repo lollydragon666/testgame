@@ -47,6 +47,8 @@ func _validate_loot_tables() -> void:
 		var drops := service.roll_for_enemy(boss_enemy, 7, 0.0, rng)
 		_require(drops.size() == 1, "Boss did not guarantee one item")
 		_require(CONTENT.item(drops[0].definition_id).minimum_wave <= 7, "Boss rolled an item above current wave")
+		_require(drops[0].item_level == 9, "Boss item level did not receive its +2 bonus")
+		_require(drops[0].rarity <= ItemEnums.ItemRarity.RARE, "Boss item exceeded the wave rarity cap")
 
 	var normal_enemy := _enemy(&"brawler")
 	var elite_enemy := _enemy(&"brawler", true)
@@ -60,7 +62,12 @@ func _validate_loot_tables() -> void:
 	_require(elite_drops > normal_drops, "Elite enemies did not use their increased drop chance")
 	for seed_value in 40:
 		rng.seed = seed_value + 9000
-		_require(service.roll_for_enemy(normal_enemy, 7, 1000.0, rng).size() == 1, "Loot chance bonus did not clamp to a guaranteed valid roll")
+		var guaranteed := service.roll_for_enemy(normal_enemy, 7, 1000.0, rng)
+		_require(guaranteed.size() == 1, "Loot chance bonus did not clamp to a guaranteed valid roll")
+		_require(guaranteed[0].item_level == 7, "Normal enemy item level is incorrect")
+	rng.seed = 481516
+	var elite_guaranteed := service.roll_for_enemy(elite_enemy, 7, 1000.0, rng)
+	_require(elite_guaranteed.size() == 1 and elite_guaranteed[0].item_level == 8, "Elite item level did not receive its +1 bonus")
 
 func _weights(table: LootTable) -> Array[int]:
 	var result: Array[int] = []
