@@ -10,6 +10,7 @@ var world_config: WorldConfig
 var world_state: WorldState
 var player: PlayerHero
 var world_root: Node2D
+var random := RandomNumberGenerator.new()
 
 func configure(
 	content: GameContent,
@@ -24,7 +25,10 @@ func configure(
 	player = player_target
 	world_root = parent
 
-func spawn(enemy_id: StringName, difficulty: float = 1.0, requested_position := Vector2.INF) -> EnemyBase:
+func configure_seed(seed_value: int) -> void:
+	random.seed = seed_value if seed_value != 0 else 1
+
+func spawn(enemy_id: StringName, difficulty: float = 1.0, requested_position := Vector2.INF, is_elite := false) -> EnemyBase:
 	if not _is_configured() or world_state.enemy_count() >= world_config.max_active_enemies:
 		return null
 	var definition := game_content.enemy(enemy_id)
@@ -46,7 +50,7 @@ func spawn(enemy_id: StringName, difficulty: float = 1.0, requested_position := 
 	if enemy == null:
 		push_error("Enemy scene does not contain EnemyBase: %s" % enemy_id)
 		return null
-	enemy.setup(player, spawn_position, difficulty, world_config, definition)
+	enemy.setup(player, spawn_position, difficulty, world_config, definition, is_elite)
 	enemy.died.connect(_relay_enemy_died)
 	enemy.projectile_requested.connect(_relay_projectile)
 	enemy.spell_requested.connect(_relay_spell)
@@ -66,7 +70,7 @@ func _find_spawn_position(distance: float, spawn_radius: float) -> Vector2:
 	var map_limit := maxf(0.0, world_config.world_limit - world_config.safe_spawn_margin)
 	var minimum_distance := distance * 0.85
 	for _attempt in 16:
-		var candidate := player.world_position + Vector2.from_angle(randf_range(0.0, TAU)) * distance
+		var candidate := player.world_position + Vector2.from_angle(random.randf_range(0.0, TAU)) * distance
 		candidate = candidate.clamp(Vector2.ONE * -map_limit, Vector2.ONE * map_limit)
 		if candidate.distance_to(player.world_position) >= minimum_distance and world_state.is_enemy_spawn_clear(
 			candidate,

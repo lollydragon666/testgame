@@ -18,6 +18,19 @@ func _draw() -> void:
 			_draw_mage(enemy as MageEnemyBase)
 		GameIds.ENEMY_BOSS:
 			_draw_boss(enemy as BossEnemy)
+	if enemy.is_elite:
+		_draw_elite_marker(enemy)
+
+func _draw_elite_marker(enemy: EnemyBase) -> void:
+	var gold := Color("d8b45c")
+	draw_arc(Vector2.ZERO, enemy.visual_radius + 6.0, 0.0, TAU, 32, gold, 3.0)
+	var marker_y := -enemy.visual_radius - 11.0
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(0.0, marker_y - 8.0),
+		Vector2(7.0, marker_y),
+		Vector2(0.0, marker_y + 8.0),
+		Vector2(-7.0, marker_y),
+	]), gold)
 
 func _health_color(enemy: EnemyBase, base_color: Color) -> Color:
 	return Color("d4c4a4") if enemy.hit_flash > 0.0 else base_color

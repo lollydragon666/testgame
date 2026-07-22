@@ -11,6 +11,7 @@ const HUB_LIMIT := Vector2(520.0, 280.0)
 var gold_label: Label
 var portal_hint: Label
 var altar_message: Label
+var tier_status_label: Label
 
 func _ready() -> void:
 	portal.configure(hub_player)
@@ -38,11 +39,11 @@ func _build_ui() -> void:
 	var panel := ColorRect.new()
 	panel.color = Color(0.035, 0.022, 0.018, 0.94)
 	panel.position = Vector2(24.0, 24.0)
-	panel.size = Vector2(390.0, 220.0)
+	panel.size = Vector2(390.0, 250.0)
 	hub_ui.add_child(panel)
 	var box := VBoxContainer.new()
 	box.position = Vector2(18.0, 16.0)
-	box.size = Vector2(354.0, 188.0)
+	box.size = Vector2(354.0, 218.0)
 	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
 	var title := Label.new()
@@ -52,6 +53,9 @@ func _build_ui() -> void:
 	box.add_child(title)
 	gold_label = Label.new()
 	box.add_child(gold_label)
+	tier_status_label = Label.new()
+	tier_status_label.add_theme_color_override("font_color", Color("d0ad64"))
+	box.add_child(tier_status_label)
 	var altar_button := Button.new()
 	altar_button.text = "УКРЕПИТЬ ЗДОРОВЬЕ — 50 ЗОЛОТА"
 	altar_button.custom_minimum_size = Vector2(0.0, 48.0)
@@ -91,8 +95,19 @@ func _refresh_profile_ui() -> void:
 		profile.gold,
 		int(profile.permanent_max_health_bonus),
 	]
+	var progress := profile.get_location_progress(&"test_location")
+	tier_status_label.text = "Следующая доступная ступень: %d" % (progress.highest_unlocked_tier if progress != null else 1)
 
 func _start_expedition(location_id: StringName) -> void:
+	var session := _session()
+	var progress: LocationProgress = session.profile.get_location_progress(location_id)
+	if progress == null:
+		push_warning("Location progress is missing: %s" % location_id)
+		return
+	session.clear_expedition_selection()
+	if not session.select_expedition(location_id, progress.highest_unlocked_tier):
+		push_warning("Highest location tier is not selectable")
+		return
 	get_node("/root/SceneRouter").start_expedition(location_id)
 
 func _show_main_menu() -> void:

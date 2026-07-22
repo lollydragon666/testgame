@@ -26,6 +26,8 @@ var move_speed := 72.0
 var contact_damage := 12.0
 ## Опыт, выпадающий после смерти обычного врага.
 var experience_value := 18
+var is_elite := false
+var _elite_modifiers_applied := false
 var hit_flash := 0.0
 var is_alive := true
 @onready var visual_root: EnemyVisual = $VisualRoot
@@ -37,7 +39,7 @@ func _ready() -> void:
 	position = IsoMath.world_to_screen(world_position)
 	refresh_visual()
 
-func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float, config: WorldConfig, enemy_definition: EnemyDefinition = null) -> void:
+func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float, config: WorldConfig, enemy_definition: EnemyDefinition = null, elite := false) -> void:
 	# difficulty усиливает характеристики по номеру волны, но не меняет радиус модели.
 	player = player_target
 	world_position = spawn_position
@@ -55,6 +57,20 @@ func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float
 	health = max_health
 	move_speed *= 1.0 + (difficulty - 1.0) * 0.12
 	contact_damage *= 1.0 + (difficulty - 1.0) * 0.16
+	is_elite = elite and (definition == null or not definition.is_boss)
+	apply_elite_modifiers()
+	health = max_health
+
+func apply_elite_modifiers() -> void:
+	if not is_elite or _elite_modifiers_applied or world_config == null:
+		return
+	_elite_modifiers_applied = true
+	max_health *= world_config.elite_health_multiplier
+	contact_damage *= world_config.elite_damage_multiplier
+	move_speed *= world_config.elite_speed_multiplier
+	experience_value = maxi(1, roundi(experience_value * world_config.elite_experience_multiplier))
+	visual_radius *= world_config.elite_visual_radius_multiplier
+	collision_radius *= world_config.elite_collision_radius_multiplier
 
 func set_world_state(state: WorldState) -> void:
 	world_state = state

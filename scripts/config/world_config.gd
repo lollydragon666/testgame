@@ -58,3 +58,11 @@ extends Resource
 @export var spawn_delay_reduction_per_wave := 0.11
 ## Прирост коэффициента здоровья и урона врагов за волну.
 @export var difficulty_growth_per_wave := 0.13
+
+@export_group("Elite Enemies")
+@export var elite_health_multiplier := 2.0
+@export var elite_damage_multiplier := 1.30
+@export var elite_speed_multiplier := 1.10
+@export var elite_experience_multiplier := 2.0
+@export var elite_visual_radius_multiplier := 1.12
+@export var elite_collision_radius_multiplier := 1.08

@@ -30,7 +30,11 @@ var mode_config: CombatModeConfig
 var auto_start_on_ready := false
 var run_seed := 0
 var defeated_enemies := 0
+var defeated_elites := 0
 var run_duration_seconds := 0.0
+var expedition_location: LocationDefinition
+var expedition_tier: ExpeditionTierDefinition
+var run_random := RandomNumberGenerator.new()
 ## Число повышений, за которые игрок ещё не выбрал усиление.
 var pending_level_ups := 0
 ## Не более трёх ID, показанных в текущем окне. Только они принимаются _apply_upgrade().
@@ -45,10 +49,18 @@ func configure_mode(config: CombatModeConfig, start_automatically := true) -> vo
 func configure_run_seed(value: int) -> void:
 	run_seed = value
 
+func configure_expedition(location_definition: LocationDefinition, tier_definition: ExpeditionTierDefinition, seed_value: int) -> void:
+	expedition_location = location_definition
+	expedition_tier = tier_definition
+	run_seed = seed_value
+
 func _ready() -> void:
-	randomize()
 	if mode_config == null:
 		mode_config = CombatModeConfig.expedition()
+	if expedition_location == null:
+		expedition_location = GAME_CONTENT.location(&"test_location")
+	if expedition_tier == null and expedition_location != null:
+		expedition_tier = expedition_location.tier_definition(1)
 	world_state = WorldState.new()
 	world_state.name = "WorldState"
 	world_state.configure(WORLD_CONFIG)
@@ -92,17 +104,20 @@ func _ready() -> void:
 	wave_manager.boss_requested.connect(_start_boss)
 	wave_manager.wave_changed.connect(_on_wave_changed)
 	wave_manager.combat_phase_changed.connect(_on_combat_phase_changed)
+	wave_manager.expedition_waves_completed.connect(_on_expedition_waves_completed)
 
 	ui = GameUI.new()
 	ui.name = "UI"
 	ui.configure_content(GAME_CONTENT)
 	add_child(ui)
+	if expedition_location != null and expedition_tier != null:
+		ui.set_expedition_context(expedition_location.display_name, expedition_tier.tier, expedition_tier.wave_count)
 	ui.start_requested.connect(_start_run)
 	ui.upgrade_selected.connect(_apply_upgrade)
 	ui.game_over_action_requested.connect(_on_game_over_action)
 	ui.set_health(player.health, player.max_health)
 	ui.set_experience(player.experience, player.experience_required, player.level)
-	ui.set_wave(1)
+	ui.set_wave(1, expedition_tier.wave_count if expedition_tier != null else 1)
 	ui.set_magic(&"", 0)
 	ui.set_dash_status(0.0, PlayerHero.DASH_COOLDOWN, false)
 	if auto_start_on_ready:
@@ -120,6 +135,7 @@ func _start_run() -> void:
 	pending_level_ups = 0
 	current_upgrade_choices.clear()
 	_clear_runtime_nodes()
+	run_random.seed = run_seed if run_seed != 0 else 1
 	location.regenerate(run_seed)
 	_register_location_destructibles()
 	player.reset_run()
@@ -127,12 +143,18 @@ func _start_run() -> void:
 	player.set_gameplay_active(true)
 	running = true
 	defeated_enemies = 0
+	defeated_elites = 0
 	run_duration_seconds = 0.0
+	enemy_spawner.configure_seed(run_seed)
 	if mode_config.enable_auto_waves:
-		wave_manager.start_run()
+		if not wave_manager.start_expedition(expedition_tier, run_seed):
+			running = false
+			player.set_gameplay_active(false)
+			ui.show_game_over(false, "ВЕРНУТЬСЯ В ХАБ", "ОШИБКА КОНФИГУРАЦИИ ВЫЛАЗКИ")
+			return
 	else:
 		wave_manager.stop()
-		ui.set_wave(1)
+		ui.set_wave(1, expedition_tier.wave_count if expedition_tier != null else 1)
 	ui.show_game()
 	run_started.emit()
 
@@ -149,10 +171,13 @@ func _clear_group(group_name: StringName) -> void:
 			node.set_physics_process(false)
 			node.queue_free()
 
-func _spawn_enemy(enemy_kind: StringName, difficulty: float) -> void:
+func _spawn_enemy(enemy_kind: StringName, difficulty: float, is_elite := false) -> EnemyBase:
 	if not running:
-		return
-	enemy_spawner.spawn(enemy_kind, difficulty)
+		return null
+	var enemy := enemy_spawner.spawn(enemy_kind, difficulty, Vector2.INF, is_elite)
+	if wave_manager.running and wave_manager.combat_phase == WaveManager.CombatPhase.WAVES:
+		wave_manager.report_spawn_result(enemy != null)
+	return enemy
 
 func _spawn_projectile(origin: Vector2, direction: Vector2, damage: float) -> void:
 	if not running or not world_state.can_spawn_enemy_projectile(WORLD_CONFIG):
@@ -203,24 +228,26 @@ func _spawn_experience(spawn_position: Vector2, amount: int) -> void:
 		var orb_value := remaining if slots_left == 1 else mini(10, remaining)
 		remaining -= orb_value
 		var orb := GamePickup.new()
-		orb.setup(player, GameIds.PICKUP_EXPERIENCE, spawn_position + Vector2.from_angle(randf_range(0.0, TAU)) * randf_range(5.0, 28.0), orb_value)
+		orb.setup(player, GameIds.PICKUP_EXPERIENCE, spawn_position + Vector2.from_angle(run_random.randf_range(0.0, TAU)) * run_random.randf_range(5.0, 28.0), orb_value)
 		world_state.register_pickup(orb)
 		world_root.add_child(orb)
 
 func _on_enemy_died(enemy: EnemyBase, experience_value: int) -> void:
 	world_state.unregister_enemy(enemy)
 	defeated_enemies += 1
+	if enemy.is_elite:
+		defeated_elites += 1
 	if enemy.definition != null and enemy.definition.is_boss:
 		if wave_manager.running:
-			_finish_run(true)
+			wave_manager.notify_boss_defeated()
 		return
 	if running:
 		_spawn_experience(enemy.world_position, experience_value)
 
 func _start_boss(enemy_kind: StringName, difficulty: float) -> void:
-	clear_enemies()
 	clear_projectiles()
-	_spawn_enemy(enemy_kind, difficulty)
+	var boss := enemy_spawner.spawn(enemy_kind, difficulty, Vector2.INF, false) if running else null
+	wave_manager.report_boss_spawn_result(boss != null)
 
 func _on_health_changed(current: float, maximum: float) -> void:
 	ui.set_health(current, maximum)
@@ -228,12 +255,15 @@ func _on_health_changed(current: float, maximum: float) -> void:
 func _on_experience_changed(current: int, required: int, level: int) -> void:
 	ui.set_experience(current, required, level)
 
-func _on_wave_changed(value: int) -> void:
-	ui.set_wave(value)
+func _on_wave_changed(value: int, total: int) -> void:
+	ui.set_wave(value, total)
 
 func _on_combat_phase_changed(phase: int) -> void:
 	if phase == WaveManager.CombatPhase.BOSS:
 		ui.set_boss_state()
+
+func _on_expedition_waves_completed() -> void:
+	_finish_run(true)
 
 func _on_level_up(_level: int) -> void:
 	if not running or not mode_config.enable_level_up_choices:
@@ -276,7 +306,11 @@ func _random_upgrade_choices(available_upgrades: Array[StringName]) -> Array[Str
 	for kind in available_upgrades:
 		if not unique_choices.has(kind):
 			unique_choices.append(kind)
-	unique_choices.shuffle()
+	for index in range(unique_choices.size() - 1, 0, -1):
+		var swap_index := run_random.randi_range(0, index)
+		var temporary := unique_choices[index]
+		unique_choices[index] = unique_choices[swap_index]
+		unique_choices[swap_index] = temporary
 	if unique_choices.size() > MAX_UPGRADE_CHOICES:
 		unique_choices.resize(MAX_UPGRADE_CHOICES)
 	return unique_choices
@@ -358,7 +392,7 @@ func set_auto_waves(enabled: bool) -> void:
 	if not running:
 		return
 	if enabled:
-		wave_manager.start_run()
+		wave_manager.start_expedition(expedition_tier, run_seed)
 	else:
 		wave_manager.stop()
 

@@ -34,7 +34,6 @@ func begin_expedition(location_id: StringName) -> bool:
 	var requested_tier := selected_location_tier if selected_location_id == location_id else 1
 	if not select_expedition(location_id, requested_tier):
 		return false
-	current_run_seed = randi()
 	last_expedition_result = null
 	current_mode = Mode.EXPEDITION
 	return true
@@ -50,14 +49,36 @@ func select_expedition(location_id: StringName, tier: int) -> bool:
 		return false
 	selected_location_id = location_id
 	selected_location_tier = tier
+	if current_run_seed == 0:
+		current_run_seed = _new_run_seed()
 	return true
+
+func selected_location() -> LocationDefinition:
+	return GAME_CONTENT.location(selected_location_id)
+
+func selected_tier() -> ExpeditionTierDefinition:
+	var location := selected_location()
+	return location.tier_definition(selected_location_tier) if location != null else null
+
+func clear_expedition_selection() -> void:
+	selected_location_id = &""
+	selected_location_tier = 0
+	current_run_seed = 0
+
+func set_next_run_seed(seed_value: int) -> void:
+	current_run_seed = seed_value
+
+func _new_run_seed() -> int:
+	var seed_value := randi()
+	return seed_value if seed_value != 0 else 1
 
 func claim_expedition_result(result: ExpeditionResult) -> bool:
 	if result == null or result.reward_claimed:
 		return false
 	result.reward_claimed = true
-	profile.gold += maxi(0, result.earned_gold)
-	profile.completed_expeditions += 1
+	profile.grant_gold(maxi(0, result.earned_gold))
+	if result.victory:
+		profile.completed_expeditions += 1
 	last_expedition_result = result
 	return true
 

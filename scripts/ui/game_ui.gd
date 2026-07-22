@@ -26,6 +26,7 @@ var wave_label: Label
 var level_label: Label
 var magic_label: Label
 var dash_label: Label
+var expedition_label: Label
 var game_over_title: Label
 var game_over_details: Label
 var game_over_action_button: Button
@@ -37,6 +38,8 @@ var upgrade_selection_locked := true
 var combat_display_state := CombatDisplayState.WAVES
 var game_content: GameContent
 var total_waves := 1
+var location_display_name := ""
+var expedition_tier_number := 1
 
 func configure_content(content: GameContent) -> void:
 	game_content = content
@@ -116,6 +119,10 @@ func _build_hud() -> void:
 	var left_box := VBoxContainer.new()
 	left_box.custom_minimum_size = Vector2(330.0, 125.0)
 	top_left.add_child(left_box)
+	expedition_label = Label.new()
+	expedition_label.add_theme_font_size_override("font_size", 18)
+	expedition_label.add_theme_color_override("font_color", Color("d0ad64"))
+	left_box.add_child(expedition_label)
 	health_label = Label.new()
 	left_box.add_child(health_label)
 	health_bar = ProgressBar.new()
@@ -321,8 +328,17 @@ func set_experience(current: int, required: int, level: int) -> void:
 	xp_label.text = "ОПЫТ  %d / %d" % [current, required]
 	level_label.text = "УРОВЕНЬ %d" % level
 
-func set_wave(value: int) -> void:
+func set_expedition_context(location_name: String, tier_number: int, wave_count: int) -> void:
+	location_display_name = location_name
+	expedition_tier_number = tier_number
+	total_waves = maxi(1, wave_count)
+	if expedition_label != null:
+		expedition_label.text = "%s · СТУПЕНЬ %d" % [location_display_name.to_upper(), expedition_tier_number]
+
+func set_wave(value: int, wave_count: int = -1) -> void:
 	combat_display_state = CombatDisplayState.WAVES
+	if wave_count > 0:
+		total_waves = wave_count
 	wave_label.add_theme_color_override("font_color", Color("d4c4a4"))
 	wave_label.text = "ВОЛНА %d / %d" % [value, total_waves]
 
