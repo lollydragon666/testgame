@@ -13,6 +13,7 @@ spatial_cell_size = 180.0
 enemy_spawn_clearance = 18.0
 enemy_separation_radius = 76.0
 enemy_separation_speed = 105.0
+enemy_separation_update_divisor = 3
 pickup_magnet_extra_range = 42.0
 pickup_magnet_base_speed = 220.0
 pickup_magnet_close_distance = 150.0

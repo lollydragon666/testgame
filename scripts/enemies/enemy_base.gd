@@ -32,6 +32,8 @@ var hit_flash := 0.0
 var is_alive := true
 const VISUAL_DIRECTION_DOT_THRESHOLD := 0.9995
 var _last_visual_direction := Vector2.ZERO
+var _cached_separation := Vector2.ZERO
+var _separation_update_phase := 0
 @onready var visual_root: EnemyVisual = $VisualRoot
 @onready var hurtbox: EntityHurtbox = $Hurtbox
 
@@ -63,6 +65,7 @@ func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float
 	is_elite = elite and (definition == null or not definition.is_boss)
 	apply_elite_modifiers()
 	health = max_health
+	reset_separation_cache()
 
 func apply_elite_modifiers() -> void:
 	if not is_elite or _elite_modifiers_applied or world_config == null:
@@ -78,6 +81,27 @@ func apply_elite_modifiers() -> void:
 func set_world_state(state: WorldState) -> void:
 	world_state = state
 
+func reset_separation_cache() -> void:
+	_cached_separation = Vector2.ZERO
+	var divisor := maxi(1, world_config.enemy_separation_update_divisor) if world_config != null else 1
+	var instance_id := get_instance_id()
+	var mixed_id := instance_id ^ (instance_id >> 16)
+	_separation_update_phase = int(mixed_id % divisor)
+
+func update_separation_cache_for_frame(physics_frame: int) -> void:
+	if world_state == null or world_config == null:
+		_cached_separation = Vector2.ZERO
+		return
+	var divisor := maxi(1, world_config.enemy_separation_update_divisor)
+	if posmod(physics_frame, divisor) == _separation_update_phase:
+		_cached_separation = world_state.enemy_separation(self, world_config.enemy_separation_radius)
+
+func separation_update_phase() -> int:
+	return _separation_update_phase
+
+func cached_separation() -> Vector2:
+	return _cached_separation
+
 func _physics_process(delta: float) -> void:
 	if not is_alive or player == null or world_config == null or not player.is_alive:
 		return
@@ -86,7 +110,8 @@ func _physics_process(delta: float) -> void:
 	var previous_position := world_position
 	tick_behavior(delta)
 	if world_state != null:
-		world_position += world_state.enemy_separation(self, world_config.enemy_separation_radius) * world_config.enemy_separation_speed * delta
+		update_separation_cache_for_frame(Engine.get_physics_frames())
+		world_position += _cached_separation * world_config.enemy_separation_speed * delta
 		world_position = world_state.resolve_obstacle_motion(previous_position, world_position, collision_radius)
 	world_position = world_position.clamp(
 		Vector2.ONE * -world_config.world_limit,

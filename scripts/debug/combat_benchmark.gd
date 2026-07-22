@@ -32,6 +32,8 @@ func _run() -> void:
 	var config := BASE_CONFIG.duplicate(true) as WorldConfig
 	config.max_active_enemies = maxi(config.max_active_enemies, enemy_count)
 	config.max_enemy_projectiles = maxi(config.max_enemy_projectiles, projectile_count)
+	if options["separation_divisor"] > 0:
+		config.enemy_separation_update_divisor = options["separation_divisor"]
 
 	_world_state = WorldState.new()
 	_world_state.name = "WorldState"
@@ -91,6 +93,8 @@ func _run() -> void:
 		"player_projectiles": _world_state.player_projectile_count(),
 		"pickups": _world_state.pickup_count(),
 		"spatial_cells": _world_state.spatial_cell_count(),
+		"separation_divisor": config.enemy_separation_update_divisor,
+		"overlapping_enemy_pairs": _count_overlapping_enemy_pairs(config.enemy_separation_radius),
 		"static_memory_bytes": int(Performance.get_monitor(Performance.MEMORY_STATIC)),
 		"node_count": int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
 	}
@@ -131,6 +135,7 @@ func _parse_options(arguments: PackedStringArray) -> Dictionary:
 		"enemies": DEFAULT_ENEMY_COUNT,
 		"projectiles": DEFAULT_PROJECTILE_COUNT,
 		"duration": DEFAULT_SAMPLE_SECONDS,
+		"separation_divisor": 0,
 	}
 	for argument in arguments:
 		if argument.begins_with("--benchmark-enemies="):
@@ -139,4 +144,20 @@ func _parse_options(arguments: PackedStringArray) -> Dictionary:
 			result["projectiles"] = maxi(0, argument.get_slice("=", 1).to_int())
 		elif argument.begins_with("--benchmark-duration="):
 			result["duration"] = maxf(1.0, argument.get_slice("=", 1).to_float())
+		elif argument.begins_with("--benchmark-separation-divisor="):
+			result["separation_divisor"] = maxi(1, argument.get_slice("=", 1).to_int())
 	return result
+
+
+func _count_overlapping_enemy_pairs(search_radius: float) -> int:
+	var pair_count := 0
+	for enemy in _world_state.enemy_snapshot():
+		if not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		for neighbor in _world_state.enemies_near(enemy.world_position, search_radius):
+			if not is_instance_valid(neighbor) or not neighbor.is_alive or neighbor.get_instance_id() <= enemy.get_instance_id():
+				continue
+			var minimum_distance := enemy.collision_radius + neighbor.collision_radius
+			if enemy.world_position.distance_squared_to(neighbor.world_position) < minimum_distance * minimum_distance:
+				pair_count += 1
+	return pair_count

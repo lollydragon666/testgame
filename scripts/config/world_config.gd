@@ -24,6 +24,8 @@ extends Resource
 @export var enemy_separation_radius := 76.0
 ## Максимальная скорость корректирующего separation-смещения.
 @export var enemy_separation_speed := 105.0
+## Враги распределяют расчёт separation по кадрам; 3 — выбранный benchmark-компромисс.
+@export_range(1, 8, 1) var enemy_separation_update_divisor := 3
 
 @export_group("Experience Magnet")
 ## Добавка к длине меча, определяющая радиус притяжения опыта.
