@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/enemy_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/shooter_enemy.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"shooter"
+scene = ExtResource("2")
+visual_radius = 22.0
+collision_radius = 22.0
+max_health = 54.0
+move_speed = 62.0
+contact_damage = 10.0
+experience_value = 26
+

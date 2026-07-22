@@ -1,0 +1,231 @@
+class_name PlayerAttack
+extends Node
+
+signal attack_started
+
+const SWEEP_START := -1.22
+const SWEEP_END := 1.04
+const MAX_SWORD_TIER := 6
+const ATTACK_BUFFER_TIME := 0.12
+
+## Урон одного замаха мечом.
+@export var damage := 34.0
+## Дальность hit shape в мировых единицах. Не зависит от размера нарисованного меча.
+@export var attack_reach := 91.0
+## Половина физической ширины клинка в мировых единицах.
+@export var attack_half_width := 7.0
+## Визуальная длина меча в пикселях; изменение не влияет на попадания.
+@export var visual_sword_length := 91.0
+## Минимальная пауза между началами двух атак.
+@export var cooldown_duration := 0.36
+## Время полного движения клинка от одного края дуги до другого.
+@export var swing_duration := 0.28
+
+## Уровни 1–6 выбирают модель меча: от гладиуса до двуручного.
+var sword_tier := 1
+var cooldown := 0.0
+var swing_time := 0.0
+## Знак меняется после атаки, поэтому удары чередуются слева направо и обратно.
+var swing_direction := 1.0
+var next_swing_direction := 1.0
+## Направление фиксируется в начале замаха и не залипает за движением мыши.
+var swing_aim_direction := Vector2.RIGHT
+var previous_swing_offset := 0.0
+## Не позволяет одной цели получить урон несколько раз за один замах.
+var hit_targets: Dictionary[int, bool] = {}
+var host: PlayerHero
+var world_state: WorldState
+var attack_shape := AttackShape.new()
+var definition: WeaponDefinition
+var attack_buffer_remaining := 0.0
+var _enemy_query_buffer: Array[EnemyBase] = []
+var _projectile_query_buffer: Array[DeflectableProjectile] = []
+var _destructible_query_buffer: Array[WorldProp] = []
+
+func setup(player_host: PlayerHero, weapon_definition: WeaponDefinition) -> void:
+	host = player_host
+	definition = weapon_definition
+	reset()
+
+func set_world_state(state: WorldState) -> void:
+	world_state = state
+
+func _physics_process(delta: float) -> void:
+	cooldown = maxf(0.0, cooldown - delta)
+	if host == null or not host.is_alive:
+		clear_input_buffer()
+	else:
+		attack_buffer_remaining = maxf(0.0, attack_buffer_remaining - delta)
+		if attack_buffer_remaining > 0.0 and cooldown <= 0.0:
+			_start_attack()
+	if swing_time > 0.0:
+		swing_time = maxf(0.0, swing_time - delta)
+		var current_offset := swing_offset() if swing_time > 0.0 else swing_end_offset()
+		_hit_groups_between(previous_swing_offset, current_offset)
+		previous_swing_offset = current_offset
+		if host != null:
+			host.refresh_visual()
+
+func try_attack() -> bool:
+	if host == null or world_state == null or not host.is_alive:
+		clear_input_buffer()
+		return false
+	if cooldown > 0.0:
+		attack_buffer_remaining = ATTACK_BUFFER_TIME
+		return false
+	_start_attack()
+	return true
+
+
+func _start_attack() -> void:
+	attack_buffer_remaining = 0.0
+	cooldown = effective_cooldown_duration()
+	swing_time = swing_duration
+	swing_direction = next_swing_direction
+	next_swing_direction *= -1.0
+	swing_aim_direction = host.aim_direction
+	previous_swing_offset = swing_start_offset()
+	hit_targets.clear()
+	attack_started.emit()
+	_hit_groups_between(previous_swing_offset, previous_swing_offset)
+	host.refresh_visual()
+
+
+func clear_input_buffer() -> void:
+	attack_buffer_remaining = 0.0
+
+func _hit_groups_between(from_offset: float, to_offset: float) -> void:
+	# Проверяется пройденный за кадр участок дуги, а не только текущая позиция меча.
+	_configure_attack_shape()
+	var segment_damage := effective_damage()
+	_hit_enemies_between(from_offset, to_offset, segment_damage)
+	_hit_projectiles_between(from_offset, to_offset)
+	_hit_destructibles_between(from_offset, to_offset)
+
+
+func _hit_enemies_between(from_offset: float, to_offset: float, segment_damage: float) -> void:
+	# 80 покрывает максимальный elite/boss collision radius и ширину клинка.
+	var query_radius := host.collision_radius + attack_reach + 80.0
+	world_state.enemies_near_into(host.world_position, query_radius, _enemy_query_buffer)
+	for enemy in _enemy_query_buffer:
+		if not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		var target_id := enemy.get_instance_id()
+		if hit_targets.has(target_id):
+			continue
+		if _configured_shape_intersects(enemy.world_position, enemy.collision_radius, from_offset, to_offset):
+			hit_targets[target_id] = true
+			enemy.take_damage(segment_damage, swing_aim_direction)
+
+func _hit_projectiles_between(from_offset: float, to_offset: float) -> void:
+	# 48 сохраняет прежний запас для стрелы: collision radius, отбивание +7 и half-width.
+	var query_radius := host.collision_radius + attack_reach + 48.0
+	world_state.enemy_projectiles_near_into(host.world_position, query_radius, _projectile_query_buffer)
+	for projectile in _projectile_query_buffer:
+		if not is_instance_valid(projectile):
+			continue
+		var target_id := projectile.get_instance_id()
+		if hit_targets.has(target_id):
+			continue
+		var target_position: Vector2 = projectile.world_position
+		var target_radius: float = projectile.collision_radius + 7.0
+		if _configured_shape_intersects(target_position, target_radius, from_offset, to_offset):
+			hit_targets[target_id] = true
+			projectile.destroy_by_sword()
+
+func _hit_destructibles_between(from_offset: float, to_offset: float) -> void:
+	# 64 покрывает максимальный радиус разрушаемых PropDefinition с запасом.
+	var query_radius := host.collision_radius + attack_reach + 64.0
+	world_state.destructibles_near_into(host.world_position, query_radius, _destructible_query_buffer)
+	for prop in _destructible_query_buffer:
+		if not is_instance_valid(prop):
+			continue
+		var target_id := prop.get_instance_id()
+		if hit_targets.has(target_id):
+			continue
+		if _configured_shape_intersects(prop.world_position, prop.collision_radius, from_offset, to_offset):
+			hit_targets[target_id] = true
+			prop.hit_by_sword()
+
+func point_in_sweep(target_world_position: Vector2, target_radius: float = 0.0) -> bool:
+	return point_in_blade_sweep(target_world_position, target_radius, SWEEP_START, SWEEP_END)
+
+func point_in_blade_sweep(target_world_position: Vector2, target_radius: float, from_offset: float, to_offset: float) -> bool:
+	_configure_attack_shape()
+	return _configured_shape_intersects(target_world_position, target_radius, from_offset, to_offset)
+
+
+func _configure_attack_shape() -> void:
+	attack_shape.configure(
+		host.world_position,
+		swing_aim_direction,
+		host.collision_radius + 5.0,
+		attack_reach,
+		attack_half_width
+	)
+
+
+func _configured_shape_intersects(target_world_position: Vector2, target_radius: float, from_offset: float, to_offset: float) -> bool:
+	var maximum_distance := attack_shape.outer_radius + maxf(0.0, target_radius) + attack_shape.half_width
+	if attack_shape.origin.distance_squared_to(target_world_position) > maximum_distance * maximum_distance:
+		return false
+	return attack_shape.intersects_swept_circle(target_world_position, target_radius, from_offset, to_offset)
+
+func swing_offset() -> float:
+	if swing_time <= 0.0:
+		return 0.0
+	var progress := 1.0 - swing_time / swing_duration
+	var eased_progress := ease(progress, -2.5)
+	return lerpf(swing_start_offset(), swing_end_offset(), eased_progress)
+
+func swing_start_offset() -> float:
+	return SWEEP_START if swing_direction > 0.0 else SWEEP_END
+
+func swing_end_offset() -> float:
+	return SWEEP_END if swing_direction > 0.0 else SWEEP_START
+
+func upgrade_sword() -> void:
+	# Шестой уровень — финальный двуручный меч с разовым дополнительным бонусом.
+	if not can_upgrade_sword():
+		return
+	sword_tier += 1
+	attack_reach += definition.reach_per_tier
+	visual_sword_length += definition.visual_length_per_tier
+	damage += definition.damage_per_tier
+	if sword_tier == definition.max_tier:
+		attack_reach += definition.final_tier_bonus_reach
+		visual_sword_length += definition.final_tier_bonus_reach
+		damage += definition.final_tier_bonus_damage
+	if host != null:
+		host.refresh_visual()
+
+func can_upgrade_sword() -> bool:
+	return definition != null and sword_tier < definition.max_tier
+
+func effective_damage() -> float:
+	if host == null:
+		return damage
+	return damage * host.profile_damage_multiplier * host.power_multiplier
+
+func effective_cooldown_duration() -> float:
+	var haste_multiplier := host.haste_cooldown_multiplier if host != null else 1.0
+	return maxf(0.14, cooldown_duration * haste_multiplier)
+
+func reset() -> void:
+	clear_input_buffer()
+	if definition == null:
+		return
+	damage = definition.base_damage
+	attack_reach = definition.base_attack_reach
+	attack_half_width = definition.attack_half_width
+	visual_sword_length = definition.base_visual_length
+	cooldown_duration = definition.cooldown
+	swing_duration = definition.swing_duration
+	sword_tier = 1
+	cooldown = 0.0
+	swing_time = 0.0
+	swing_direction = 1.0
+	next_swing_direction = 1.0
+	swing_aim_direction = Vector2.RIGHT
+	previous_swing_offset = 0.0
+	hit_targets.clear()
