@@ -158,11 +158,12 @@ func can_upgrade_sword() -> bool:
 func effective_damage() -> float:
 	if host == null:
 		return damage
-	return damage * host.profile_damage_multiplier * host.power_multiplier
+	return host.roll_attack_damage(damage * host.profile_damage_multiplier * host.power_multiplier)
 
 func effective_cooldown_duration() -> float:
 	var haste_multiplier := host.haste_cooldown_multiplier if host != null else 1.0
-	return maxf(0.14, cooldown_duration * haste_multiplier)
+	var equipment_speed := 1.0 + maxf(-0.75, host.equipment_attack_speed_bonus) if host != null else 1.0
+	return maxf(0.14, cooldown_duration * haste_multiplier / equipment_speed)
 
 func reset() -> void:
 	if definition == null:

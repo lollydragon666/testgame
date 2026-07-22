@@ -8,6 +8,7 @@ signal level_up_requested(level: int)
 signal magic_cast_requested(spell_kind: StringName, origin: Vector2, direction: Vector2, damage: float, spell_level: int)
 signal magic_changed(spell_kind: StringName, spell_level: int)
 signal dash_status_changed(cooldown_remaining: float, cooldown_duration: float, active: bool)
+signal player_stats_changed(stats: PlayerStats)
 
 const DASH_DISTANCE := 165.0
 const DASH_COOLDOWN := 1.1
@@ -46,6 +47,14 @@ var dash_time_remaining := 0.0
 var dash_distance_remaining := 0.0
 var dash_direction := Vector2.RIGHT
 var is_dashing := false
+var equipment_stats := PlayerStats.new()
+var equipment_damage_multiplier := 1.0
+var equipment_attack_speed_bonus := 0.0
+var equipment_defense := 0.0
+var equipment_loot_chance := 0.0
+var critical_chance := 0.0
+var critical_damage := 1.5
+var combat_random := RandomNumberGenerator.new()
 
 # Компоненты объявлены в player.tscn, а поведенческий скрипт только связывает их.
 @onready var movement: PlayerMovement = $Movement
@@ -191,7 +200,8 @@ func _relay_magic_changed(spell_kind: StringName, spell_level: int) -> void:
 func take_damage(amount: float) -> void:
 	if invulnerability > 0.0 or not is_alive:
 		return
-	var reduced_amount := amount * (1.0 - armor_damage_reduction)
+	var armor_reduced := amount * (1.0 - armor_damage_reduction)
+	var reduced_amount := maxf(0.0, armor_reduced) * 100.0 / (100.0 + maxf(0.0, equipment_defense))
 	health = maxf(0.0, health - reduced_amount)
 	invulnerability = 0.45
 	health_changed.emit(health, max_health)
@@ -244,6 +254,27 @@ func apply_profile_bonuses(max_health_bonus: float, damage_bonus: float) -> void
 	profile_damage_multiplier = maxf(0.0, 1.0 + damage_bonus)
 	health_changed.emit(health, max_health)
 
+func apply_equipment_stats(stats: PlayerStats) -> void:
+	equipment_stats = stats if stats != null else PlayerStats.new()
+	equipment_stats.finalize()
+	max_health += equipment_stats.max_health_bonus
+	health = minf(max_health, health + equipment_stats.max_health_bonus)
+	movement.speed *= maxf(0.25, 1.0 + equipment_stats.movement_speed_bonus)
+	equipment_damage_multiplier = maxf(0.05, 1.0 + equipment_stats.damage_bonus)
+	equipment_attack_speed_bonus = equipment_stats.attack_speed_bonus
+	equipment_defense = equipment_stats.defense
+	equipment_loot_chance = equipment_stats.loot_chance
+	critical_chance = equipment_stats.critical_chance
+	critical_damage = equipment_stats.critical_damage
+	health_changed.emit(health, max_health)
+	player_stats_changed.emit(equipment_stats)
+
+func roll_attack_damage(base_amount: float) -> float:
+	var result := base_amount * equipment_damage_multiplier
+	if critical_chance > 0.0 and combat_random.randf() < critical_chance:
+		result *= critical_damage
+	return maxf(0.0, result)
+
 func reset_run() -> void:
 	world_position = Vector2.ZERO
 	position = Vector2.ZERO
@@ -267,6 +298,14 @@ func reset_run() -> void:
 	dash_distance_remaining = 0.0
 	dash_direction = Vector2.RIGHT
 	is_dashing = false
+	equipment_stats = PlayerStats.new()
+	equipment_damage_multiplier = 1.0
+	equipment_attack_speed_bonus = 0.0
+	equipment_defense = 0.0
+	equipment_loot_chance = 0.0
+	critical_chance = 0.0
+	critical_damage = 1.5
+	combat_random.seed = 1
 	movement.speed = 195.0
 	movement.reset()
 	attack.reset()

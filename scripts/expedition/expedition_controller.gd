@@ -92,6 +92,7 @@ func _apply_profile_bonuses(player: PlayerHero) -> void:
 		profile.permanent_max_health_bonus,
 		profile.permanent_damage_bonus
 	)
+	player.apply_equipment_stats(PlayerStatCalculator.calculate(_session().inventory))
 
 func _on_run_finished(victory: bool) -> void:
 	if result != null:

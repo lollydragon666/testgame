@@ -1,0 +1,405 @@
+[gd_resource type="Resource" script_class="ItemCatalog" load_steps=28 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/items/armor_definition.gd" id="2_armor"]
+[ext_resource type="Script" path="res://scripts/items/jewelry_definition.gd" id="3_jewelry"]
+
+[sub_resource type="Resource" id="Armor_cloth"]
+script = ExtResource("2_armor")
+id = &"cloth_armor"
+display_name = "Стёганая броня"
+description = "Лёгкая стёганая защита."
+item_type = 1
+equipment_slot = 2
+rarity = 0
+base_price = 100
+sell_price = 35
+visual_style = &"cloth"
+sort_order = 101
+minimum_wave = 1
+defense = 5.0
+
+[sub_resource type="Resource" id="Armor_leather"]
+script = ExtResource("2_armor")
+id = &"leather_armor"
+display_name = "Кожаная броня"
+description = "Гибкая броня, не мешающая движению."
+item_type = 1
+equipment_slot = 2
+rarity = 0
+base_price = 350
+sell_price = 122
+visual_style = &"leather"
+sort_order = 102
+minimum_wave = 1
+defense = 12.0
+max_health_bonus = 5.0
+movement_speed_modifier = 0.02
+
+[sub_resource type="Resource" id="Armor_reinforced_leather"]
+script = ExtResource("2_armor")
+id = &"reinforced_leather"
+display_name = "Усиленная кожа"
+description = "Кожаный комплект с металлическими вставками."
+item_type = 1
+equipment_slot = 2
+rarity = 1
+base_price = 700
+sell_price = 245
+visual_style = &"reinforced_leather"
+sort_order = 103
+minimum_wave = 2
+defense = 19.0
+max_health_bonus = 10.0
+
+[sub_resource type="Resource" id="Armor_chainmail"]
+script = ExtResource("2_armor")
+id = &"chainmail"
+display_name = "Кольчуга"
+description = "Кольца хорошо держат удар, но немного замедляют."
+item_type = 1
+equipment_slot = 2
+rarity = 1
+base_price = 1200
+sell_price = 420
+visual_style = &"chainmail"
+sort_order = 104
+minimum_wave = 3
+defense = 28.0
+max_health_bonus = 15.0
+movement_speed_modifier = -0.02
+
+[sub_resource type="Resource" id="Armor_mercenary"]
+script = ExtResource("2_armor")
+id = &"mercenary_armor"
+display_name = "Броня наёмника"
+description = "Практичный комплект для опасных контрактов."
+item_type = 1
+equipment_slot = 2
+rarity = 1
+base_price = 1900
+sell_price = 665
+visual_style = &"mercenary"
+sort_order = 105
+minimum_wave = 4
+defense = 36.0
+max_health_bonus = 20.0
+
+[sub_resource type="Resource" id="Armor_knight"]
+script = ExtResource("2_armor")
+id = &"knight_armor"
+display_name = "Рыцарский доспех"
+description = "Тяжёлые пластины для лобового боя."
+item_type = 1
+equipment_slot = 2
+rarity = 2
+base_price = 3000
+sell_price = 1050
+visual_style = &"knight"
+sort_order = 106
+minimum_wave = 5
+defense = 48.0
+max_health_bonus = 35.0
+movement_speed_modifier = -0.05
+
+[sub_resource type="Resource" id="Armor_royal_guard"]
+script = ExtResource("2_armor")
+id = &"royal_guard_armor"
+display_name = "Доспех королевской гвардии"
+description = "Отборная броня защитников трона."
+item_type = 1
+equipment_slot = 2
+rarity = 2
+base_price = 4800
+sell_price = 1680
+visual_style = &"royal_guard"
+sort_order = 107
+minimum_wave = 6
+defense = 58.0
+max_health_bonus = 45.0
+movement_speed_modifier = -0.04
+
+[sub_resource type="Resource" id="Armor_dragon_scale"]
+script = ExtResource("2_armor")
+id = &"dragon_scale_armor"
+display_name = "Доспех из драконьей чешуи"
+description = "Прочный и удивительно подвижный комплект."
+item_type = 1
+equipment_slot = 2
+rarity = 3
+base_price = 7500
+sell_price = 2625
+visual_style = &"dragon_scale"
+sort_order = 108
+minimum_wave = 8
+defense = 68.0
+max_health_bonus = 60.0
+
+[sub_resource type="Resource" id="Armor_void"]
+script = ExtResource("2_armor")
+id = &"void_armor"
+display_name = "Доспех пустоты"
+description = "Тёмные пластины кажутся легче воздуха."
+item_type = 1
+equipment_slot = 2
+rarity = 3
+base_price = 11000
+sell_price = 3850
+visual_style = &"void"
+sort_order = 109
+minimum_wave = 10
+defense = 78.0
+max_health_bonus = 75.0
+movement_speed_modifier = 0.02
+
+[sub_resource type="Resource" id="Armor_titan"]
+script = ExtResource("2_armor")
+id = &"titan_armor"
+display_name = "Доспех титана"
+description = "Легендарные плиты, способные остановить чудовище."
+item_type = 1
+equipment_slot = 2
+rarity = 4
+base_price = 16000
+sell_price = 5600
+visual_style = &"titan"
+sort_order = 110
+minimum_wave = 12
+defense = 100.0
+max_health_bonus = 120.0
+movement_speed_modifier = -0.08
+
+[sub_resource type="Resource" id="Amulet_health"]
+script = ExtResource("3_jewelry")
+id = &"health_amulet"
+display_name = "Амулет здоровья"
+description = "Укрепляет жизненную силу владельца."
+item_type = 2
+equipment_slot = 3
+rarity = 1
+base_price = 600
+sell_price = 210
+visual_style = &"health_amulet"
+sort_order = 201
+minimum_wave = 2
+max_health_bonus = 40.0
+
+[sub_resource type="Resource" id="Amulet_strength"]
+script = ExtResource("3_jewelry")
+id = &"strength_amulet"
+display_name = "Амулет силы"
+description = "Усиливает любой удар владельца."
+item_type = 2
+equipment_slot = 3
+rarity = 1
+base_price = 800
+sell_price = 280
+visual_style = &"strength_amulet"
+sort_order = 202
+minimum_wave = 3
+damage_bonus = 0.12
+
+[sub_resource type="Resource" id="Amulet_defense"]
+script = ExtResource("3_jewelry")
+id = &"defense_amulet"
+display_name = "Амулет защиты"
+description = "Создаёт незримый защитный покров."
+item_type = 2
+equipment_slot = 3
+rarity = 1
+base_price = 900
+sell_price = 315
+visual_style = &"defense_amulet"
+sort_order = 203
+minimum_wave = 3
+defense_bonus = 20.0
+
+[sub_resource type="Resource" id="Amulet_wind"]
+script = ExtResource("3_jewelry")
+id = &"wind_amulet"
+display_name = "Амулет ветра"
+description = "Облегчает шаг и ускоряет движение."
+item_type = 2
+equipment_slot = 3
+rarity = 2
+base_price = 1000
+sell_price = 350
+visual_style = &"wind_amulet"
+sort_order = 204
+minimum_wave = 4
+movement_speed_bonus = 0.08
+
+[sub_resource type="Resource" id="Amulet_hunter"]
+script = ExtResource("3_jewelry")
+id = &"hunter_amulet"
+display_name = "Амулет охотника"
+description = "Помогает находить трофеи среди павших врагов."
+item_type = 2
+equipment_slot = 3
+rarity = 2
+base_price = 1200
+sell_price = 420
+visual_style = &"hunter_amulet"
+sort_order = 205
+minimum_wave = 5
+loot_chance_bonus = 0.2
+
+[sub_resource type="Resource" id="Amulet_hero"]
+script = ExtResource("3_jewelry")
+id = &"hero_amulet"
+display_name = "Амулет героя"
+description = "Редкая реликвия, понемногу усиливающая всё."
+item_type = 2
+equipment_slot = 3
+rarity = 3
+base_price = 3500
+sell_price = 1225
+visual_style = &"hero_amulet"
+sort_order = 206
+minimum_wave = 8
+damage_bonus = 0.08
+defense_bonus = 15.0
+max_health_bonus = 25.0
+movement_speed_bonus = 0.04
+attack_speed_bonus = 0.04
+critical_chance_bonus = 0.03
+loot_chance_bonus = 0.08
+
+[sub_resource type="Resource" id="Ring_strength"]
+script = ExtResource("3_jewelry")
+id = &"strength_ring"
+display_name = "Кольцо силы"
+description = "Увеличивает наносимый урон."
+item_type = 2
+equipment_slot = 4
+rarity = 1
+base_price = 500
+sell_price = 175
+visual_style = &"strength_ring"
+sort_order = 211
+minimum_wave = 2
+allow_duplicate_equipment = true
+damage_bonus = 0.08
+
+[sub_resource type="Resource" id="Ring_haste"]
+script = ExtResource("3_jewelry")
+id = &"haste_ring"
+display_name = "Кольцо быстроты"
+description = "Ускоряет атаки оружием."
+item_type = 2
+equipment_slot = 4
+rarity = 1
+base_price = 650
+sell_price = 227
+visual_style = &"haste_ring"
+sort_order = 212
+minimum_wave = 3
+allow_duplicate_equipment = false
+attack_speed_bonus = 0.1
+
+[sub_resource type="Resource" id="Ring_defense"]
+script = ExtResource("3_jewelry")
+id = &"defense_ring"
+display_name = "Кольцо защиты"
+description = "Смягчает входящий урон."
+item_type = 2
+equipment_slot = 4
+rarity = 1
+base_price = 700
+sell_price = 245
+visual_style = &"defense_ring"
+sort_order = 213
+minimum_wave = 3
+allow_duplicate_equipment = false
+defense_bonus = 12.0
+
+[sub_resource type="Resource" id="Ring_life"]
+script = ExtResource("3_jewelry")
+id = &"life_ring"
+display_name = "Кольцо жизни"
+description = "Увеличивает запас здоровья."
+item_type = 2
+equipment_slot = 4
+rarity = 1
+base_price = 750
+sell_price = 262
+visual_style = &"life_ring"
+sort_order = 214
+minimum_wave = 3
+allow_duplicate_equipment = false
+max_health_bonus = 25.0
+
+[sub_resource type="Resource" id="Ring_hunter"]
+script = ExtResource("3_jewelry")
+id = &"hunter_ring"
+display_name = "Кольцо охотника"
+description = "Повышает шанс найти предмет."
+item_type = 2
+equipment_slot = 4
+rarity = 2
+base_price = 1000
+sell_price = 350
+visual_style = &"hunter_ring"
+sort_order = 215
+minimum_wave = 5
+allow_duplicate_equipment = false
+loot_chance_bonus = 0.12
+
+[sub_resource type="Resource" id="Ring_accuracy"]
+script = ExtResource("3_jewelry")
+id = &"accuracy_ring"
+display_name = "Кольцо точности"
+description = "Повышает шанс критического удара."
+item_type = 2
+equipment_slot = 4
+rarity = 2
+base_price = 1200
+sell_price = 420
+visual_style = &"accuracy_ring"
+sort_order = 216
+minimum_wave = 6
+allow_duplicate_equipment = false
+critical_chance_bonus = 0.08
+
+[sub_resource type="Resource" id="Ring_destruction"]
+script = ExtResource("3_jewelry")
+id = &"destruction_ring"
+display_name = "Кольцо разрушения"
+description = "Критические удары становятся сильнее."
+item_type = 2
+equipment_slot = 4
+rarity = 2
+base_price = 1400
+sell_price = 490
+visual_style = &"destruction_ring"
+sort_order = 217
+minimum_wave = 6
+allow_duplicate_equipment = false
+critical_damage_bonus = 0.35
+
+[sub_resource type="Resource" id="Ring_royal"]
+script = ExtResource("3_jewelry")
+id = &"royal_ring"
+display_name = "Королевское кольцо"
+description = "Умеренно усиливает несколько характеристик."
+item_type = 2
+equipment_slot = 4
+rarity = 3
+base_price = 4000
+sell_price = 1400
+visual_style = &"royal_ring"
+sort_order = 218
+minimum_wave = 9
+allow_duplicate_equipment = false
+damage_bonus = 0.04
+defense_bonus = 8.0
+max_health_bonus = 15.0
+movement_speed_bonus = 0.03
+attack_speed_bonus = 0.04
+critical_chance_bonus = 0.03
+critical_damage_bonus = 0.15
+loot_chance_bonus = 0.05
+
+[resource]
+script = ExtResource("1_catalog")
+definitions = Array[ItemDefinition]([SubResource("Armor_cloth"), SubResource("Armor_leather"), SubResource("Armor_reinforced_leather"), SubResource("Armor_chainmail"), SubResource("Armor_mercenary"), SubResource("Armor_knight"), SubResource("Armor_royal_guard"), SubResource("Armor_dragon_scale"), SubResource("Armor_void"), SubResource("Armor_titan"), SubResource("Amulet_health"), SubResource("Amulet_strength"), SubResource("Amulet_defense"), SubResource("Amulet_wind"), SubResource("Amulet_hunter"), SubResource("Amulet_hero"), SubResource("Ring_strength"), SubResource("Ring_haste"), SubResource("Ring_defense"), SubResource("Ring_life"), SubResource("Ring_hunter"), SubResource("Ring_accuracy"), SubResource("Ring_destruction"), SubResource("Ring_royal")])

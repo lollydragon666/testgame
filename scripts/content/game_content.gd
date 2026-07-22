@@ -35,7 +35,7 @@ func item(id: StringName) -> ItemDefinition:
 	return item_catalog.definition(id) if item_catalog != null else null
 
 func all_items() -> Array[ItemDefinition]:
-	return item_catalog.definitions.duplicate() if item_catalog != null else []
+	return item_catalog.all_definitions() if item_catalog != null else []
 
 func upgrade(id: StringName) -> UpgradeDefinition:
 	for definition in upgrades:
