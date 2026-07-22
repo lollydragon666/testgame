@@ -95,10 +95,11 @@ func unregister_pickup(pickup: GamePickup) -> void:
 	_pickups.erase(pickup)
 
 func register_world_prop(prop: WorldProp) -> void:
-	if _obstacles.has(prop):
+	if _obstacles.has(prop) or _destructibles.has(prop):
 		return
-	_obstacles.append(prop)
-	_obstacle_grid.insert(prop, prop.world_position)
+	if prop.blocks_navigation:
+		_obstacles.append(prop)
+		_obstacle_grid.insert(prop, prop.world_position)
 	if prop.destructible:
 		_destructibles.append(prop)
 		_destructible_grid.insert(prop, prop.world_position)

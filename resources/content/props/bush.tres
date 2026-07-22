@@ -3,8 +3,11 @@
 [resource]
 script = ExtResource("1")
 id = &"bush"
+style = &"bush"
 spawn_count = 120
 visual_radius = 30.0
 collision_radius = 30.0
 potion_chance = 0.2
-
+base_color = Color(0.239, 0.357, 0.192, 1)
+secondary_color = Color(0.149, 0.208, 0.122, 1)
+visual_height = 32.0
