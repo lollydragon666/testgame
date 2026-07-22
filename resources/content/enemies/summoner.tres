@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+[ext_resource type="Script" path="res://scripts/content/enemy_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/archetype_enemy.tscn" id="2"]
+[ext_resource type="Resource" path="res://resources/content/visuals/enemy_summoner.tres" id="3"]
+[resource]
+script = ExtResource("1")
+id = &"summoner"
+display_name = "Призыватель"
+scene = ExtResource("2")
+visual_definition = ExtResource("3")
+enemy_class = 8
+visual_radius = 27.0
+collision_radius = 23.0
+max_health = 105.0
+move_speed = 55.0
+contact_damage = 9.0
+attack_damage = 9.0
+attack_range = 70.0
+preferred_distance = 380.0
+retreat_distance = 260.0
+ability_cooldown = 8.0
+ability_power = 2.0
+experience_value = 58
+introduced_wave = 12
+spawn_weight = 0.16
+max_alive = 2
+

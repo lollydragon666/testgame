@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="GameContent" load_steps=40 format=3]
+[gd_resource type="Resource" script_class="GameContent" load_steps=51 format=3]
 
 [ext_resource type="Script" path="res://scripts/content/game_content.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/content/enemies/brawler.tres" id="2"]
@@ -39,10 +39,21 @@
 [ext_resource type="Resource" path="res://resources/content/loot/elite.tres" id="37"]
 [ext_resource type="Resource" path="res://resources/content/loot/boss.tres" id="38"]
 [ext_resource type="Resource" path="res://resources/item_affixes.tres" id="39"]
+[ext_resource type="Resource" path="res://resources/content/enemies/swordsman.tres" id="40"]
+[ext_resource type="Resource" path="res://resources/content/enemies/raider.tres" id="41"]
+[ext_resource type="Resource" path="res://resources/content/enemies/brute.tres" id="42"]
+[ext_resource type="Resource" path="res://resources/content/enemies/shield_bearer.tres" id="43"]
+[ext_resource type="Resource" path="res://resources/content/enemies/spearman.tres" id="44"]
+[ext_resource type="Resource" path="res://resources/content/enemies/archer.tres" id="45"]
+[ext_resource type="Resource" path="res://resources/content/enemies/healer.tres" id="46"]
+[ext_resource type="Resource" path="res://resources/content/enemies/commander.tres" id="47"]
+[ext_resource type="Resource" path="res://resources/content/enemies/summoner.tres" id="48"]
+[ext_resource type="Resource" path="res://resources/content/enemies/bomber.tres" id="49"]
+[ext_resource type="Resource" path="res://resources/content/enemies/summoned_minion.tres" id="50"]
 
 [resource]
 script = ExtResource("1")
-enemies = Array[EnemyDefinition]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8")])
+enemies = Array[EnemyDefinition]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("40"), ExtResource("41"), ExtResource("42"), ExtResource("43"), ExtResource("44"), ExtResource("45"), ExtResource("46"), ExtResource("47"), ExtResource("48"), ExtResource("49"), ExtResource("50")])
 spells = Array[SpellDefinition]([ExtResource("9"), ExtResource("10")])
 weapons = Array[WeaponDefinition]([ExtResource("11")])
 upgrades = Array[UpgradeDefinition]([ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("27"), ExtResource("28"), ExtResource("29"), ExtResource("30")])

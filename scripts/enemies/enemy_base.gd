@@ -24,6 +24,7 @@ var health := 70.0
 var move_speed := 72.0
 ## Базовый урон собственной атаки врага.
 var contact_damage := 12.0
+var defense := 0.0
 ## Опыт, выпадающий после смерти обычного врага.
 var experience_value := 18
 var is_elite := false
@@ -53,6 +54,7 @@ func setup(player_target: PlayerHero, spawn_position: Vector2, difficulty: float
 		max_health = definition.max_health
 		move_speed = definition.move_speed
 		contact_damage = definition.contact_damage
+		defense = definition.defense
 		experience_value = definition.experience_value
 	max_health *= difficulty
 	health = max_health
@@ -109,7 +111,8 @@ func move_toward_player(delta: float, speed_multiplier: float = 1.0) -> float:
 func take_damage(amount: float, knockback_direction: Vector2 = Vector2.ZERO) -> void:
 	if not is_alive:
 		return
-	health -= amount
+	var reduced_amount := maxf(0.0, amount) * 100.0 / (100.0 + maxf(0.0, defense))
+	health -= reduced_amount
 	hit_flash = 0.15
 	visual_root.play_hurt()
 	visual_root.refresh_status()

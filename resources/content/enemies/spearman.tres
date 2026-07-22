@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+[ext_resource type="Script" path="res://scripts/content/enemy_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/archetype_enemy.tscn" id="2"]
+[ext_resource type="Resource" path="res://resources/content/visuals/enemy_spearman.tres" id="3"]
+[resource]
+script = ExtResource("1")
+id = &"spearman"
+display_name = "Копейщик"
+scene = ExtResource("2")
+visual_definition = ExtResource("3")
+enemy_class = 4
+visual_radius = 27.0
+collision_radius = 24.0
+max_health = 92.0
+move_speed = 68.0
+contact_damage = 19.0
+attack_damage = 19.0
+attack_range = 162.0
+attack_cooldown = 2.1
+attack_windup = 0.42
+attack_recovery = 0.50
+preferred_distance = 138.0
+retreat_distance = 92.0
+experience_value = 31
+introduced_wave = 5
+spawn_weight = 0.60
+
