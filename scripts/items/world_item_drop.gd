@@ -10,7 +10,9 @@ const PICKUP_RADIUS := 24.0
 var item: ItemInstance
 var definition: ItemDefinition
 var player: PlayerHero
-var inventory: InventoryService
+var permanent_inventory: InventoryService
+var run_inventory: RunInventoryService
+var run_context: RunContext
 var world_position := Vector2.ZERO
 var protection_remaining := PICKUP_PROTECTION_TIME
 var _time := 0.0
@@ -20,20 +22,26 @@ func setup(
 	item_instance: ItemInstance,
 	item_definition: ItemDefinition,
 	player_hero: PlayerHero,
-	inventory_service: InventoryService,
-	spawn_position: Vector2
+	inventory_service: Variant,
+	spawn_position: Vector2,
+	context: RunContext = null
 ) -> void:
 	item = item_instance
 	definition = item_definition
 	player = player_hero
-	inventory = inventory_service
+	if inventory_service is RunInventoryService:
+		run_inventory = inventory_service as RunInventoryService
+		run_context = context
+	elif inventory_service is InventoryService:
+		# Compatibility path for isolated legacy tests; gameplay uses run_inventory.
+		permanent_inventory = inventory_service as InventoryService
 	world_position = spawn_position
 	position = IsoMath.world_to_screen(world_position)
 
 func _ready() -> void:
 	add_to_group(&"world_item_drop")
 	_name_label = Label.new()
-	_name_label.text = definition.display_name if definition != null else "Предмет"
+	_name_label.text = "%s\n[ДОБЫЧА ЗАБЕГА]" % (definition.display_name if definition != null else "Предмет") if run_inventory != null else (definition.display_name if definition != null else "Предмет")
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_label.position = Vector2(-100.0, -49.0)
 	_name_label.size = Vector2(200.0, 24.0)
@@ -46,16 +54,20 @@ func _physics_process(delta: float) -> void:
 	_time += delta
 	protection_remaining = maxf(0.0, protection_remaining - delta)
 	queue_redraw()
-	if protection_remaining > 0.0 or player == null or inventory == null or not player.is_alive:
+	if protection_remaining > 0.0 or player == null or not player.is_alive:
 		return
 	if world_position.distance_to(player.world_position) > PICKUP_RADIUS + player.collision_radius:
 		return
 	try_pick_up()
 
 func try_pick_up() -> bool:
-	if item == null or inventory == null:
+	if item == null:
 		return false
-	if not inventory.add_item(item):
+	if run_inventory != null:
+		if run_context == null or not run_context.is_active() or not run_inventory.add_item(item):
+			pickup_failed.emit("Временный инвентарь заполнен")
+			return false
+	elif permanent_inventory == null or not permanent_inventory.add_item(item):
 		pickup_failed.emit("Инвентарь заполнен")
 		return false
 	picked_up.emit(item)

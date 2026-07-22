@@ -24,6 +24,7 @@ func _ready() -> void:
 	combat.name = "Combat"
 	combat.configure_mode(CombatModeConfig.expedition(), true)
 	combat.configure_inventory(_session().inventory)
+	combat.configure_run_inventory(_session().run_inventory, _session().run_context)
 	combat.configure_economy(_session().profile, _session().shop_service)
 	combat.configure_expedition(location_definition, tier_definition, _session().current_run_seed)
 	combat.run_setup_requested.connect(_apply_profile_bonuses)

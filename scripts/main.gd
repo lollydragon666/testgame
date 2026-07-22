@@ -42,6 +42,8 @@ var pending_level_ups := 0
 ## Не более трёх ID, показанных в текущем окне. Только они принимаются _apply_upgrade().
 var current_upgrade_choices: Array[StringName] = []
 var inventory_service: InventoryService
+var run_inventory: RunInventoryService
+var run_context: RunContext
 var loot_service := LootService.new()
 var player_profile: PlayerProfile
 var shop_service: ShopService
@@ -58,6 +60,10 @@ func configure_run_seed(value: int) -> void:
 
 func configure_inventory(service: InventoryService) -> void:
 	inventory_service = service
+
+func configure_run_inventory(storage: RunInventoryService, context: RunContext) -> void:
+	run_inventory = storage
+	run_context = context
 
 func configure_economy(profile: PlayerProfile, economy_service: ShopService) -> void:
 	player_profile = profile
@@ -79,6 +85,11 @@ func _ready() -> void:
 		inventory_service = InventoryService.new()
 		inventory_service.configure(GAME_CONTENT)
 		inventory_service.load_serialized([], {})
+	if run_inventory == null:
+		run_inventory = RunInventoryService.new()
+		run_inventory.configure(GAME_CONTENT)
+	if run_context == null:
+		run_context = RunContext.new()
 	world_state = WorldState.new()
 	world_state.name = "WorldState"
 	world_state.configure(WORLD_CONFIG)
@@ -166,6 +177,9 @@ func start_run() -> void:
 	_start_run()
 
 func _start_run() -> void:
+	if run_context.state != RunContext.RunState.ACTIVE:
+		run_inventory.clear()
+		run_context = RunContext.create(inventory_service.serialized_equipment())
 	get_tree().paused = false
 	pending_level_ups = 0
 	current_upgrade_choices.clear()
@@ -295,7 +309,7 @@ func _spawn_world_item(item: ItemInstance, spawn_position: Vector2) -> WorldItem
 		return null
 	var drop := WorldItemDrop.new()
 	var offset := Vector2.from_angle(run_random.randf_range(0.0, TAU)) * run_random.randf_range(8.0, 24.0)
-	drop.setup(item, definition, player, inventory_service, spawn_position + offset)
+	drop.setup(item, definition, player, run_inventory, spawn_position + offset, run_context)
 	if not loot_service.register_world_drop(drop):
 		drop.free()
 		return null
