@@ -27,7 +27,7 @@ func _run() -> void:
 		_require(definition.validate_definition().is_empty(), "Tier %d is invalid" % expected_tier)
 	_require(location.tier_definition(0) == null, "Invalid tier zero was found")
 	_require(location.tier_definition(11) == null, "Invalid tier eleven was found")
-	_require(location.tier_definition(1).wave_count == 2, "Tier 1 does not have two waves")
+	_require(location.tier_definition(1).wave_count == 3, "Tier 1 does not have three waves")
 	_require(location.tier_definition(1).guaranteed_elite_count == 2, "Tier 1 does not have two guaranteed elites")
 	var final_tier := location.tier_definition(10)
 	_require(final_tier.boss_id == GameIds.ENEMY_BOSS, "Tier 10 has the wrong boss ID")

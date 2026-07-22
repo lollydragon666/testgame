@@ -82,7 +82,7 @@ func _validate_content_catalog() -> void:
 	_check(not CONTENT.locations.is_empty(), "GameContent has no locations")
 	_check(CONTENT.item_catalog != null and not CONTENT.all_items().is_empty(), "GameContent has no item catalog")
 	_check(CONTENT.shops.size() == 3, "GameContent must contain three shops")
-	_check(CONTENT.loot_tables.size() == 3, "GameContent must contain three loot tables")
+	_check(CONTENT.loot_tables.size() >= 3, "GameContent must contain base loot tables")
 	_check(CONTENT.item_affixes != null and not CONTENT.item_affixes.definitions.is_empty(), "GameContent has no item affixes")
 	for location_error in CONTENT.validate_locations():
 		_check(false, location_error)

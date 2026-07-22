@@ -40,13 +40,13 @@ func _run() -> void:
 	var active: Array[int] = [0]
 	var manager := _manager(active)
 	_require(manager.start_expedition(_tier(1), 101), "Tier 1 did not start")
-	_require(manager.total_waves == 2, "Tier 1 did not use two waves")
+	_require(manager.total_waves == 3, "Tier 1 did not use three waves")
 	_require(manager.start_expedition(_tier(3), 101), "Tier 3 did not start")
-	_require(manager.total_waves == 3, "Tier 3 did not use three waves")
+	_require(manager.total_waves == 5, "Tier 3 did not use five waves")
 	_require(manager.start_expedition(_tier(8), 101), "Tier 8 did not start")
-	_require(manager.total_waves == 5, "Tier 8 did not use five waves")
+	_require(manager.total_waves == 12, "Tier 8 did not use twelve waves")
 	_require(manager.start_expedition(_tier(10), 101), "Tier 10 did not start")
-	_require(manager.total_waves == 3 and manager.runtime_boss_id == GameIds.ENEMY_BOSS, "Tier 10 did not configure three waves and boss")
+	_require(manager.total_waves == 15 and manager.runtime_boss_id == GameIds.ENEMY_BOSS, "Tier 10 did not configure fifteen waves and boss")
 	for tier_number in range(1, 10):
 		_require(_tier(tier_number).boss_id.is_empty(), "Tier %d unexpectedly has a boss" % tier_number)
 
@@ -54,7 +54,7 @@ func _run() -> void:
 	var wave_events: Array[Vector2i] = []
 	manager.wave_changed.connect(func(current: int, total: int): wave_events.append(Vector2i(current, total)))
 	manager.start_expedition(_tier(3), 222)
-	_require(wave_events[0] == Vector2i(1, 3), "wave_changed did not include current and total waves")
+	_require(wave_events[0] == Vector2i(1, 5), "wave_changed did not include current and total waves")
 	var base_count := manager.base_enemy_count_for_wave(1)
 	_require(manager.enemy_count_for_wave(1) == maxi(1, roundi(base_count * _tier(3).enemy_count_multiplier)), "Enemy multiplier was not applied exactly once")
 	manager.start_expedition(_tier(8), 223)
@@ -139,7 +139,7 @@ func _run() -> void:
 
 	manager.start_expedition(_tier(10), 12)
 	manager.start_expedition(_tier(1), 13)
-	_require(manager.total_waves == 2, "Restart retained tier 10 wave count")
+	_require(manager.total_waves == 3, "Restart retained tier 10 wave count")
 	_require(manager.runtime_boss_id.is_empty(), "Restart retained tier 10 boss")
 	_require(is_equal_approx(manager.runtime_difficulty_multiplier, _tier(1).difficulty_multiplier), "Restart retained tier 10 difficulty")
 	_require(is_equal_approx(manager.runtime_elite_chance, _tier(1).elite_chance), "Restart retained tier 10 elite chance")
