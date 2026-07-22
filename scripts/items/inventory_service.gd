@@ -16,6 +16,8 @@ var _items: Array[ItemInstance] = []
 var _equipped_items: Dictionary = {}
 var _consumable_cooldowns: Dictionary[ItemEnums.EquipmentSlot, float] = {}
 var _consumable_handler: Callable
+var _transaction_depth := 0
+var _inventory_change_pending := false
 
 func configure(content: GameContent) -> void:
 	game_content = content
@@ -24,6 +26,23 @@ func configure(content: GameContent) -> void:
 
 func configure_consumable_handler(handler: Callable) -> void:
 	_consumable_handler = handler
+
+func begin_transaction() -> void:
+	_transaction_depth += 1
+
+func end_transaction() -> void:
+	if _transaction_depth <= 0:
+		return
+	_transaction_depth -= 1
+	if _transaction_depth == 0 and _inventory_change_pending:
+		_inventory_change_pending = false
+		inventory_changed.emit()
+
+func _emit_inventory_changed() -> void:
+	if _transaction_depth > 0:
+		_inventory_change_pending = true
+	else:
+		inventory_changed.emit()
 
 func _reset_equipment() -> void:
 	_equipped_items = {
@@ -89,7 +108,7 @@ func add_item(item: ItemInstance) -> bool:
 			item_added.emit(added.instance_id)
 	else:
 		_add_stackable(item, definition)
-	inventory_changed.emit()
+	_emit_inventory_changed()
 	return true
 
 func can_add_item(item: ItemInstance) -> bool:
@@ -157,7 +176,7 @@ func remove_item(instance_id: String, quantity := 1) -> bool:
 	if item.quantity <= 0:
 		_items.erase(item)
 		item_removed.emit(instance_id)
-	inventory_changed.emit()
+	_emit_inventory_changed()
 	return true
 
 func find_item(instance_id: String) -> ItemInstance:
@@ -289,3 +308,5 @@ func clear_for_tests() -> void:
 	_items.clear()
 	_reset_equipment()
 	reset_consumable_runtime()
+	_transaction_depth = 0
+	_inventory_change_pending = false

@@ -92,4 +92,3 @@ is_percentage = true
 [resource]
 script = ExtResource("1_catalog")
 definitions = Array[ItemAffixDefinition]([SubResource("Sturdy"), SubResource("Sharp"), SubResource("Swift"), SubResource("Vital"), SubResource("Light"), SubResource("Lucky"), SubResource("Precise"), SubResource("Destructive")])
-

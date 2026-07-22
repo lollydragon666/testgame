@@ -17,6 +17,16 @@ func apply_to_item(
 	item.affixes.clear()
 	var rolled_rarity := roll_rarity(wave, rng)
 	item.rarity = maxi(definition.rarity, rolled_rarity) as ItemEnums.ItemRarity
+	apply_affixes(item, definition, rng)
+
+func apply_affixes(
+	item: ItemInstance,
+	definition: ItemDefinition,
+	rng: RandomNumberGenerator
+) -> void:
+	if item == null or definition == null or rng == null:
+		return
+	item.affixes.clear()
 	if definition.item_type == ItemEnums.ItemType.CONSUMABLE or catalog == null:
 		return
 	var available := catalog.compatible(definition.item_type)

@@ -8,4 +8,3 @@ extends ItemDefinition
 
 func accepts_slot(slot: ItemEnums.EquipmentSlot) -> bool:
 	return slot == ItemEnums.EquipmentSlot.CONSUMABLE_2 or slot == ItemEnums.EquipmentSlot.CONSUMABLE_3
-

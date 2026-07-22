@@ -80,8 +80,34 @@ func _validate_content_catalog() -> void:
 	_check(not CONTENT.waves.is_empty(), "GameContent has no waves")
 	_check(not CONTENT.props.is_empty(), "GameContent has no props")
 	_check(not CONTENT.locations.is_empty(), "GameContent has no locations")
+	_check(CONTENT.item_catalog != null and not CONTENT.all_items().is_empty(), "GameContent has no item catalog")
+	_check(CONTENT.shops.size() == 3, "GameContent must contain three shops")
+	_check(CONTENT.loot_tables.size() == 3, "GameContent must contain three loot tables")
+	_check(CONTENT.item_affixes != null and not CONTENT.item_affixes.definitions.is_empty(), "GameContent has no item affixes")
 	for location_error in CONTENT.validate_locations():
 		_check(false, location_error)
+	var item_ids: Dictionary[StringName, bool] = {}
+	for definition in CONTENT.all_items():
+		_check(definition != null and not definition.id.is_empty(), "Invalid item definition")
+		if definition == null:
+			continue
+		_check(not item_ids.has(definition.id), "Duplicate item ID: %s" % definition.id)
+		item_ids[definition.id] = true
+		_check(definition.base_price >= 0 and definition.max_stack > 0, "Invalid item values: %s" % definition.id)
+	for shop in CONTENT.shops:
+		_check(shop != null and not shop.id.is_empty(), "Invalid shop definition")
+		if shop == null:
+			continue
+		for item_id in shop.stock_definition_ids:
+			_check(item_ids.has(item_id), "Shop references unknown item: %s" % item_id)
+	for table in CONTENT.loot_tables:
+		_check(table != null and not table.id.is_empty() and not table.entries.is_empty(), "Invalid loot table")
+	var affix_ids: Dictionary[StringName, bool] = {}
+	for affix in CONTENT.item_affixes.definitions:
+		_check(affix != null and not affix.id.is_empty(), "Invalid item affix")
+		if affix != null:
+			_check(not affix_ids.has(affix.id), "Duplicate item affix: %s" % affix.id)
+			affix_ids[affix.id] = true
 
 	var enemy_ids: Dictionary[StringName, bool] = {}
 	for definition in CONTENT.enemies:

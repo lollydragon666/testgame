@@ -22,4 +22,3 @@ func roll_entry(wave: int, rng: RandomNumberGenerator) -> LootTableEntry:
 		if roll <= 0.0:
 			return entry
 	return available.back()
-

@@ -7,4 +7,3 @@ extends Resource
 
 func sells(definition_id: StringName) -> bool:
 	return stock_definition_ids.has(definition_id)
-

@@ -22,4 +22,3 @@ func roll(rng: RandomNumberGenerator) -> ItemAffixRoll:
 	result.value = rng.randf_range(minf(min_value, max_value), maxf(min_value, max_value))
 	result.is_percentage = is_percentage
 	return result
-

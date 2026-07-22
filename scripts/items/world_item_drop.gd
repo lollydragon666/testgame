@@ -84,4 +84,3 @@ func _rarity_color() -> Color:
 		Color("9e62c7"),
 		Color("d49a3a"),
 	][clampi(item.rarity, ItemEnums.ItemRarity.COMMON, ItemEnums.ItemRarity.LEGENDARY)]
-

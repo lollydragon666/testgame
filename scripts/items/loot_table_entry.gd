@@ -11,4 +11,3 @@ extends Resource
 
 func is_available(wave: int) -> bool:
 	return wave >= minimum_wave and (maximum_wave <= 0 or wave <= maximum_wave)
-

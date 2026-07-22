@@ -30,4 +30,3 @@ script = ExtResource("1")
 id = &"boss"
 base_drop_chance = 1.0
 entries = Array[LootTableEntry]([SubResource("Consumables"), SubResource("Weapons"), SubResource("Armor"), SubResource("Jewelry")])
-

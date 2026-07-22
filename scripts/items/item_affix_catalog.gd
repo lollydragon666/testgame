@@ -15,4 +15,3 @@ func compatible(item_type: ItemEnums.ItemType) -> Array[ItemAffixDefinition]:
 		if affix != null and affix.weight > 0.0 and affix.supports(item_type):
 			result.append(affix)
 	return result
-

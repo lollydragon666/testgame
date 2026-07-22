@@ -123,4 +123,3 @@ cooldown = 4.0
 [resource]
 script = ExtResource("1_catalog")
 definitions = Array[ItemDefinition]([SubResource("Consumable_small_healing"), SubResource("Consumable_large_healing"), SubResource("Consumable_power"), SubResource("Consumable_iron_skin"), SubResource("Consumable_haste"), SubResource("Consumable_wind")])
-

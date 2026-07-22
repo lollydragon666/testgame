@@ -43,10 +43,13 @@ func buy_item(shop_id: StringName, definition_id: StringName, quantity := 1) -> 
 	var definition := game_content.item(definition_id)
 	var total_price := definition.base_price * quantity
 	var purchased_item := ItemInstance.create(definition_id, quantity, definition.rarity)
+	inventory.begin_transaction()
 	if not inventory.add_item(purchased_item):
+		inventory.end_transaction()
 		_notify("В инвентаре недостаточно места")
 		return false
 	profile.gold -= total_price
+	inventory.end_transaction()
 	currency_changed.emit(profile.gold)
 	purchase_completed.emit(shop_id, definition_id, quantity)
 	_save_profile()
@@ -73,10 +76,13 @@ func sell_item(instance_id: String, quantity := 1) -> bool:
 	var item := inventory.find_item(instance_id)
 	var definition := game_content.item(item.definition_id)
 	var total_price := definition.resolved_sell_price(item.affixes.size()) * quantity
+	inventory.begin_transaction()
 	if not inventory.remove_item(instance_id, quantity):
+		inventory.end_transaction()
 		_notify("Предмет не удалось удалить из инвентаря")
 		return false
 	profile.grant_gold(total_price)
+	inventory.end_transaction()
 	currency_changed.emit(profile.gold)
 	sale_completed.emit(instance_id, quantity)
 	_save_profile()
@@ -88,4 +94,3 @@ func _save_profile() -> void:
 
 func _notify(message: String) -> void:
 	notification_requested.emit(message)
-

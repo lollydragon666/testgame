@@ -370,4 +370,3 @@ func _button(text: String) -> Button:
 func _clear_children(node: Node) -> void:
 	for child in node.get_children():
 		child.free()
-
