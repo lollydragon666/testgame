@@ -3,6 +3,7 @@ extends Resource
 
 @export var id: StringName
 @export var scene: PackedScene
+@export var visual_definition: CharacterVisualDefinition
 @export var visual_radius := 24.0
 @export var collision_radius := 24.0
 @export var max_health := 70.0

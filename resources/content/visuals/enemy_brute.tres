@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CharacterVisualDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/visuals/character_visual_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"enemy_brute"
+body_style = &"wide"
+head_style = &"heavy"
+helmet_style = &"heavy_helmet"
+enemy_weapon_style = &"heavy_sword"
+body_width = 43.0
+body_height = 47.0
+shoulder_width = 52.0
+head_size = 19.0
+body_color = Color(0.27, 0.25, 0.22, 1)
+secondary_color = Color(0.13, 0.11, 0.1, 1)
+skin_color = Color(0.54, 0.39, 0.3, 1)
+helmet_color = Color(0.3, 0.29, 0.28, 1)
+accent_color = Color(0.52, 0.25, 0.15, 1)
+visual_height = 70.0
+shadow_scale = Vector2(1.3, 1.15)
+

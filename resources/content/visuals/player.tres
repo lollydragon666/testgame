@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="CharacterVisualDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/visuals/character_visual_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"player"
+body_style = &"medium"
+head_style = &"human"
+helmet_style = &"open_helmet"
+additional_style = &"cape"
+body_width = 32.0
+body_height = 43.0
+shoulder_width = 38.0
+head_size = 16.0
+body_color = Color(0.459, 0.09, 0.078, 1)
+secondary_color = Color(0.153, 0.055, 0.051, 1)
+skin_color = Color(0.73, 0.545, 0.408, 1)
+helmet_color = Color(0.33, 0.306, 0.267, 1)
+accent_color = Color(0.815, 0.678, 0.392, 1)
+outline_color = Color(0.105, 0.059, 0.047, 1)
+visual_height = 62.0
+

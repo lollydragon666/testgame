@@ -436,4 +436,5 @@ func reset_run() -> void:
 	refresh_visual()
 
 func refresh_visual() -> void:
-	visual_root.queue_redraw()
+	if visual_root != null:
+		visual_root.sync_from_player(self)

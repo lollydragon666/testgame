@@ -30,6 +30,7 @@ var is_elite := false
 var _elite_modifiers_applied := false
 var hit_flash := 0.0
 var is_alive := true
+var previous_world_position := Vector2.ZERO
 @onready var visual_root: EnemyVisual = $VisualRoot
 @onready var hurtbox: EntityHurtbox = $Hurtbox
 
@@ -80,6 +81,7 @@ func _physics_process(delta: float) -> void:
 		return
 	hit_flash = maxf(0.0, hit_flash - delta)
 	var previous_position := world_position
+	previous_world_position = previous_position
 	tick_behavior(delta)
 	if world_state != null:
 		world_position += world_state.enemy_separation(self, world_config.enemy_separation_radius) * world_config.enemy_separation_speed * delta
@@ -124,4 +126,5 @@ func damage_player(amount: float = -1.0) -> void:
 		player.take_damage(contact_damage if amount < 0.0 else amount)
 
 func refresh_visual() -> void:
-	visual_root.queue_redraw()
+	if visual_root != null:
+		visual_root.sync_from_enemy(self)

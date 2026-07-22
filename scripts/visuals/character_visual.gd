@@ -99,6 +99,8 @@ func _apply_transforms() -> void:
 		return
 	var moving := movement_velocity.length_squared() > 1.0
 	var bob := sin(animation_time * (10.0 if moving else 3.2)) * (2.0 if moving else 0.8)
+	var screen_facing := IsoMath.world_to_screen(facing_direction).normalized()
+	mirrored_visual_root.scale.x = -1.0 if screen_facing.x < 0.0 else 1.0
 	mirrored_visual_root.position.y = bob + death_progress * 16.0
 	mirrored_visual_root.rotation = sin(animation_time * 7.0) * 0.025 if moving else 0.0
 	mirrored_visual_root.rotation += attack_pulse * 0.10

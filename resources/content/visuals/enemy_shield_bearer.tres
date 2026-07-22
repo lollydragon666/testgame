@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CharacterVisualDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/visuals/character_visual_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"enemy_shield_bearer"
+body_style = &"wide"
+head_style = &"human"
+helmet_style = &"closed_helmet"
+enemy_weapon_style = &"shield_sword"
+body_width = 38.0
+body_height = 45.0
+shoulder_width = 45.0
+body_color = Color(0.19, 0.25, 0.29, 1)
+secondary_color = Color(0.1, 0.13, 0.16, 1)
+helmet_color = Color(0.35, 0.39, 0.41, 1)
+accent_color = Color(0.66, 0.53, 0.25, 1)
+visual_height = 66.0
+

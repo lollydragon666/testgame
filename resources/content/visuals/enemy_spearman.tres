@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CharacterVisualDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/visuals/character_visual_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"enemy_spearman"
+body_style = &"tall"
+head_style = &"thin"
+helmet_style = &"open_helmet"
+enemy_weapon_style = &"spear"
+body_width = 29.0
+body_height = 48.0
+shoulder_width = 34.0
+head_size = 15.0
+body_color = Color(0.38, 0.31, 0.19, 1)
+secondary_color = Color(0.19, 0.14, 0.08, 1)
+helmet_color = Color(0.39, 0.36, 0.3, 1)
+accent_color = Color(0.73, 0.64, 0.42, 1)
+visual_height = 68.0
+
