@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="WaveDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/wave_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+number = 10
+enemy_roster = Array[StringName]([&"swordsman", &"raider", &"shield_bearer", &"commander"])
+spawn_weights = {&"swordsman": 0.3, &"raider": 0.25, &"shield_bearer": 0.3, &"commander": 0.15}
+maximum_alive = {&"commander": 1}
+duration_override = 14.5
+

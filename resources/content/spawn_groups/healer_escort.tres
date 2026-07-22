@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EnemySpawnGroupDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/enemy_spawn_group_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"healer_escort"
+minimum_wave = 8
+enemy_ids = Array[StringName]([&"healer", &"shield_bearer"])
+minimum_counts = Array[int]([1, 2])
+maximum_counts = Array[int]([1, 3])
+formation_radius = 130.0
+

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="WaveDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/wave_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+number = 15
+enemy_roster = Array[StringName]([&"swordsman", &"raider", &"brute", &"shield_bearer", &"spearman", &"archer", &"healer", &"commander", &"summoner", &"bomber"])
+spawn_weights = {&"swordsman": 0.15, &"raider": 0.15, &"brute": 0.08, &"shield_bearer": 0.14, &"spearman": 0.12, &"archer": 0.12, &"healer": 0.05, &"commander": 0.04, &"summoner": 0.05, &"bomber": 0.1}
+maximum_alive = {&"healer": 1, &"commander": 1, &"summoner": 1, &"bomber": 2, &"brute": 2}
+sequence_group_ids = Array[StringName]([&"basic_melee", &"shield_and_spear", &"archer_screen", &"healer_escort", &"commander_squad", &"summoner_guard", &"bomber_rush"])
+duration_override = 18.0

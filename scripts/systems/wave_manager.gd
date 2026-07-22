@@ -25,6 +25,7 @@ var remaining_guaranteed_elites := 0
 var running := false
 var combat_phase := CombatPhase.WAVES
 var active_enemy_count_provider: Callable
+var active_enemy_kind_count_provider: Callable
 var world_config: WorldConfig
 var game_content: GameContent
 
@@ -42,9 +43,13 @@ var _elite_schedule: Array = []
 var _spawn_pending := false
 var _boss_spawned := false
 var _completion_emitted := false
+var _opening_spawn_queue: Array[StringName] = []
+var _spawned_by_kind: Dictionary[StringName, int] = {}
+var _pending_enemy_kind: StringName
 
-func setup(enemy_count_provider: Callable, config: WorldConfig, content: GameContent) -> void:
+func setup(enemy_count_provider: Callable, config: WorldConfig, content: GameContent, enemy_kind_count_provider: Callable = Callable()) -> void:
 	active_enemy_count_provider = enemy_count_provider
+	active_enemy_kind_count_provider = enemy_kind_count_provider
 	world_config = config
 	game_content = content
 
@@ -103,6 +108,9 @@ func _reset_runtime() -> void:
 	_spawn_pending = false
 	_boss_spawned = false
 	_completion_emitted = false
+	_opening_spawn_queue.clear()
+	_spawned_by_kind.clear()
+	_pending_enemy_kind = &""
 
 func _configuration_error(tier_definition: ExpeditionTierDefinition) -> String:
 	if world_config == null or game_content == null:
@@ -215,6 +223,8 @@ func _begin_wave(wave_number: int) -> void:
 	wave_time = 0.0
 	spawned_in_wave = 0
 	remaining_to_spawn = _wave_enemy_counts[wave - 1]
+	_spawned_by_kind.clear()
+	_build_opening_spawn_queue(game_content.wave(wave))
 	spawn_time = world_config.first_spawn_delay
 	wave_changed.emit(wave, total_waves)
 
@@ -237,8 +247,12 @@ func _physics_process(delta: float) -> void:
 
 func _request_next_spawn() -> void:
 	var definition := game_content.wave(wave)
-	var enemy_kind := definition.enemy_roster[spawn_index % definition.enemy_roster.size()]
+	var enemy_kind := _select_enemy_kind(definition)
+	if enemy_kind.is_empty():
+		spawn_time = world_config.minimum_spawn_delay
+		return
 	var is_elite: bool = _elite_schedule[wave - 1][spawned_in_wave] == 1
+	_pending_enemy_kind = enemy_kind
 	_spawn_pending = true
 	spawn_requested.emit(enemy_kind, difficulty_for_wave(wave), is_elite)
 
@@ -247,6 +261,9 @@ func report_spawn_result(success: bool) -> void:
 		return
 	_spawn_pending = false
 	if not success:
+		if not _pending_enemy_kind.is_empty():
+			_opening_spawn_queue.push_front(_pending_enemy_kind)
+		_pending_enemy_kind = &""
 		spawn_time = world_config.minimum_spawn_delay
 		return
 	if _guaranteed_schedule[wave - 1][spawned_in_wave] == 1:
@@ -254,6 +271,8 @@ func report_spawn_result(success: bool) -> void:
 	spawned_in_wave += 1
 	remaining_to_spawn -= 1
 	total_spawned += 1
+	_spawned_by_kind[_pending_enemy_kind] = _spawned_by_kind.get(_pending_enemy_kind, 0) + 1
+	_pending_enemy_kind = &""
 	spawn_index += 1
 	spawn_time = spawn_interval_for_wave(wave)
 
@@ -292,3 +311,53 @@ func _complete_expedition() -> void:
 
 func _active_enemy_count() -> int:
 	return int(active_enemy_count_provider.call()) if active_enemy_count_provider.is_valid() else 0
+
+func _active_enemy_kind_count(enemy_id: StringName) -> int:
+	return int(active_enemy_kind_count_provider.call(enemy_id)) if active_enemy_kind_count_provider.is_valid() else 0
+
+func _build_opening_spawn_queue(definition: WaveDefinition) -> void:
+	_opening_spawn_queue.clear()
+	if definition == null:
+		return
+	var group_ids := definition.sequence_group_ids if not definition.sequence_group_ids.is_empty() else definition.guaranteed_group_ids
+	for group_id in group_ids:
+		var group := game_content.enemy_spawn_group(group_id)
+		if group != null:
+			_opening_spawn_queue.append_array(group.build_spawn_list(_rng, wave))
+	if _opening_spawn_queue.size() > remaining_to_spawn:
+		_opening_spawn_queue.resize(remaining_to_spawn)
+
+func _select_enemy_kind(definition: WaveDefinition) -> StringName:
+	while not _opening_spawn_queue.is_empty():
+		var opening_id: StringName = _opening_spawn_queue.pop_front()
+		if _enemy_allowed(definition, opening_id):
+			return opening_id
+	var candidates: Array[StringName] = []
+	var weights: Array[float] = []
+	var total_weight := 0.0
+	for enemy_id in definition.enemy_roster:
+		if candidates.has(enemy_id) or not _enemy_allowed(definition, enemy_id):
+			continue
+		var weight := maxf(0.0, definition.spawn_weights.get(enemy_id, 1.0))
+		if weight <= 0.0:
+			continue
+		candidates.append(enemy_id)
+		weights.append(weight)
+		total_weight += weight
+	if candidates.is_empty():
+		return &""
+	var roll := _rng.randf() * total_weight
+	for index in candidates.size():
+		roll -= weights[index]
+		if roll <= 0.0:
+			return candidates[index]
+	return candidates.back()
+
+func _enemy_allowed(definition: WaveDefinition, enemy_id: StringName) -> bool:
+	var alive_limit: int = definition.maximum_alive.get(enemy_id, 0)
+	if alive_limit > 0 and _active_enemy_kind_count(enemy_id) >= alive_limit:
+		return false
+	var wave_limit: int = definition.maximum_per_wave.get(enemy_id, 0)
+	if wave_limit > 0 and _spawned_by_kind.get(enemy_id, 0) >= wave_limit:
+		return false
+	return true

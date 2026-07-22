@@ -2,6 +2,7 @@ class_name GameContent
 extends Resource
 
 @export var enemies: Array[EnemyDefinition] = []
+@export var enemy_spawn_groups: Array[EnemySpawnGroupDefinition] = []
 @export var spells: Array[SpellDefinition] = []
 @export var weapons: Array[WeaponDefinition] = []
 @export var upgrades: Array[UpgradeDefinition] = []
@@ -16,6 +17,12 @@ extends Resource
 func enemy(id: StringName) -> EnemyDefinition:
 	for definition in enemies:
 		if definition.id == id:
+			return definition
+	return null
+
+func enemy_spawn_group(id: StringName) -> EnemySpawnGroupDefinition:
+	for definition in enemy_spawn_groups:
+		if definition != null and definition.id == id:
 			return definition
 	return null
 

@@ -6,7 +6,7 @@
 script = ExtResource("1")
 tier = 2
 display_name = "Ступень II"
-wave_count = 2
+wave_count = 4
 difficulty_multiplier = 1.1
 enemy_count_multiplier = 0.9
 spawn_rate_multiplier = 0.95

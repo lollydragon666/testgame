@@ -3,5 +3,8 @@
 [resource]
 script = ExtResource("1")
 number = 6
-enemy_roster = Array[StringName]([&"brawler", &"lightning_mage", &"lancer", &"fire_mage", &"shooter", &"melee", &"brawler"])
+enemy_roster = Array[StringName]([&"swordsman", &"raider", &"spearman", &"archer"])
+spawn_weights = {&"swordsman": 0.35, &"raider": 0.2, &"spearman": 0.2, &"archer": 0.25}
+maximum_alive = {&"archer": 2}
+duration_override = 12.0
 

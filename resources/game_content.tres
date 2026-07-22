@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="GameContent" load_steps=51 format=3]
+[gd_resource type="Resource" script_class="GameContent" load_steps=66 format=3]
 
 [ext_resource type="Script" path="res://scripts/content/game_content.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/content/enemies/brawler.tres" id="2"]
@@ -50,14 +50,30 @@
 [ext_resource type="Resource" path="res://resources/content/enemies/summoner.tres" id="48"]
 [ext_resource type="Resource" path="res://resources/content/enemies/bomber.tres" id="49"]
 [ext_resource type="Resource" path="res://resources/content/enemies/summoned_minion.tres" id="50"]
+[ext_resource type="Resource" path="res://resources/content/spawn_groups/basic_melee.tres" id="51"]
+[ext_resource type="Resource" path="res://resources/content/spawn_groups/shield_and_spear.tres" id="52"]
+[ext_resource type="Resource" path="res://resources/content/spawn_groups/archer_screen.tres" id="53"]
+[ext_resource type="Resource" path="res://resources/content/spawn_groups/healer_escort.tres" id="54"]
+[ext_resource type="Resource" path="res://resources/content/spawn_groups/commander_squad.tres" id="55"]
+[ext_resource type="Resource" path="res://resources/content/spawn_groups/summoner_guard.tres" id="56"]
+[ext_resource type="Resource" path="res://resources/content/spawn_groups/bomber_rush.tres" id="57"]
+[ext_resource type="Resource" path="res://resources/content/waves/wave_8.tres" id="58"]
+[ext_resource type="Resource" path="res://resources/content/waves/wave_9.tres" id="59"]
+[ext_resource type="Resource" path="res://resources/content/waves/wave_10.tres" id="60"]
+[ext_resource type="Resource" path="res://resources/content/waves/wave_11.tres" id="61"]
+[ext_resource type="Resource" path="res://resources/content/waves/wave_12.tres" id="62"]
+[ext_resource type="Resource" path="res://resources/content/waves/wave_13.tres" id="63"]
+[ext_resource type="Resource" path="res://resources/content/waves/wave_14.tres" id="64"]
+[ext_resource type="Resource" path="res://resources/content/waves/wave_15.tres" id="65"]
 
 [resource]
 script = ExtResource("1")
 enemies = Array[EnemyDefinition]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("40"), ExtResource("41"), ExtResource("42"), ExtResource("43"), ExtResource("44"), ExtResource("45"), ExtResource("46"), ExtResource("47"), ExtResource("48"), ExtResource("49"), ExtResource("50")])
+enemy_spawn_groups = Array[EnemySpawnGroupDefinition]([ExtResource("51"), ExtResource("52"), ExtResource("53"), ExtResource("54"), ExtResource("55"), ExtResource("56"), ExtResource("57")])
 spells = Array[SpellDefinition]([ExtResource("9"), ExtResource("10")])
 weapons = Array[WeaponDefinition]([ExtResource("11")])
 upgrades = Array[UpgradeDefinition]([ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("27"), ExtResource("28"), ExtResource("29"), ExtResource("30")])
-waves = Array[WaveDefinition]([ExtResource("17"), ExtResource("18"), ExtResource("19"), ExtResource("20"), ExtResource("21"), ExtResource("22"), ExtResource("23")])
+waves = Array[WaveDefinition]([ExtResource("17"), ExtResource("18"), ExtResource("19"), ExtResource("20"), ExtResource("21"), ExtResource("22"), ExtResource("23"), ExtResource("58"), ExtResource("59"), ExtResource("60"), ExtResource("61"), ExtResource("62"), ExtResource("63"), ExtResource("64"), ExtResource("65")])
 props = Array[PropDefinition]([ExtResource("24"), ExtResource("25"), ExtResource("26")])
 locations = Array[LocationDefinition]([ExtResource("31")])
 item_catalog = ExtResource("32")

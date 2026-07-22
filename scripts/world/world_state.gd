@@ -287,6 +287,13 @@ func enemy_count() -> int:
 func active_enemy_count() -> int:
 	return _enemies.size()
 
+func enemy_count_by_id(enemy_id: StringName) -> int:
+	var count := 0
+	for enemy in _enemies:
+		if is_instance_valid(enemy) and enemy.is_alive and enemy.enemy_kind == enemy_id:
+			count += 1
+	return count
+
 func enemy_projectile_count() -> int:
 	return _enemy_projectiles.size()
 

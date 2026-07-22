@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WaveDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/content/wave_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+number = 9
+enemy_roster = Array[StringName]([&"brute", &"spearman", &"archer", &"healer"])
+spawn_weights = {&"brute": 0.25, &"spearman": 0.25, &"archer": 0.35, &"healer": 0.15}
+guaranteed_group_ids = Array[StringName]([&"healer_escort"])
+maximum_alive = {&"healer": 1, &"brute": 2}
+maximum_per_wave = {&"healer": 2}
+duration_override = 14.0
+

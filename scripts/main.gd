@@ -133,7 +133,7 @@ func _ready() -> void:
 	wave_manager = WaveManager.new()
 	wave_manager.name = "WaveManager"
 	add_child(wave_manager)
-	wave_manager.setup(world_state.enemy_count, WORLD_CONFIG, GAME_CONTENT)
+	wave_manager.setup(world_state.enemy_count, WORLD_CONFIG, GAME_CONTENT, world_state.enemy_count_by_id)
 	wave_manager.spawn_requested.connect(_spawn_enemy)
 	wave_manager.boss_requested.connect(_start_boss)
 	wave_manager.wave_changed.connect(_on_wave_changed)
